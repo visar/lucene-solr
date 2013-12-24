@@ -17,7 +17,7 @@
    under the License.    
 -->
 <ivysettings>
-  <settings defaultResolver="default"/>
+  <settings defaultResolver="bb-default"/>
 
   <property name="local-maven2-dir" value="${user.home}/.m2/repository/" />
   
@@ -31,6 +31,28 @@
   <caches lockStrategy="artifact-lock" resolutionCacheDir="${common.build.dir}/ivy-resolution-cache" /> 
 
   <resolvers>
+
+    <!-- New Artifactory repositories: Contact: April Tsui (Artifactory) -->
+    <ibiblio name="bb-art-main" root="http://artifactory.dev.bloomberg.com:8081/artifactory/repo1" m2compatible="true" />
+    <ibiblio name="bb-art-jcenter" root="http://artifactory.dev.bloomberg.com:8081/artifactory/jcenter" m2compatible="true" />
+    <ibiblio name="bb-art-cloudera" root="http://artifactory.dev.bloomberg.com:8081/artifactory/cloudera.repo" m2compatible="true" />
+
+    <ibiblio name="bb-art-sonatype-releases" root="http://artifactory.dev.bloomberg.com:8081/artifactory/sonatype-public" m2compatible="true" />
+    <ibiblio name="bb-art-maven-restlet" root="http://artifactory.dev.bloomberg.com:8081/artifactory/maven-restlet" m2compatible="true" />
+
+    <!-- Nexus repositories: Contact: Daniel Gazineu (BLAW) -->
+    <ibiblio name="bb-nexus-main" root="http://repo.dev.bloomberg.com/content/repositories/repo1" m2compatible="true" />
+    <ibiblio name="bb-nexus-central" root="http://repo.dev.bloomberg.com/content/repositories/central" m2compatible="true" />
+    <ibiblio name="bb-nexus-cloudera" root="http://repo.dev.bloomberg.com/content/repositories/cloudera-public" m2compatible="true" />
+    <ibiblio name="bb-nexus-sonatype-releases" root="http://repo.dev.bloomberg.com/content/repositories/sonatype-public" m2compatible="true" />
+
+    <chain name="bb-default" returnFirst="true" checkmodified="true" changingPattern=".*SNAPSHOT">
+      <resolver ref="local"/>
+      <resolver ref="bb-art-main"/>
+      <resolver ref="bb-art-jcenter"/>
+      <resolver ref="bb-art-cloudera"/>
+    </chain>
+
     <ibiblio name="sonatype-releases" root="https://oss.sonatype.org/content/repositories/releases" m2compatible="true" />
     <ibiblio name="maven.restlet.org" root="http://maven.restlet.org" m2compatible="true" />
     <ibiblio name="cloudera" root="http://repository.cloudera.com/artifactory/repo" m2compatible="true" />
