@@ -115,7 +115,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   
   protected NamedList<NamedList<NamedList<Object>>> getMBeanInfo(SolrQueryRequest req) {
 
-    NamedList<NamedList<NamedList<Object>>> cats = new NamedList<>();
+    NamedList<NamedList<NamedList<Object>>> cats = new SimpleOrderedMap<>();
     
     String[] requestedCats = req.getParams().getParams("cat");
     if (null == requestedCats || 0 == requestedCats.length) {
@@ -172,7 +172,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       NamedList<NamedList<NamedList<Object>>> now,
       boolean includeAll ) {
     
-    NamedList<NamedList<NamedList<Object>>> changed = new NamedList<>();
+    NamedList<NamedList<NamedList<Object>>> changed = new SimpleOrderedMap<>();
     
     // Cycle through each category
     for(int i=0;i<ref.size();i++) {
