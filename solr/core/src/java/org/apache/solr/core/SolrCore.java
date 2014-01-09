@@ -2038,10 +2038,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid value '" + ep + "' for " + CommonParams.HEADER_ECHO_PARAMS 
             + " parameter, use '" + EchoParamStyle.EXPLICIT + "' or '" + EchoParamStyle.ALL + "'" );
       }
+
+      String ep_mv = params.get( CommonParams.HEADER_ECHO_PARAMS_MULTIVALUED, null );
+      List<String> ep_mv_list = (ep_mv != null ? Arrays.asList(ep_mv.split(",")) : null);
+
       if( echoParams == EchoParamStyle.EXPLICIT ) {
-        responseHeader.add("params", req.getOriginalParams().toNamedList());
+        responseHeader.add("params", req.getOriginalParams().toNamedList(ep_mv_list));
       } else if( echoParams == EchoParamStyle.ALL ) {
-        responseHeader.add("params", req.getParams().toNamedList());
+        responseHeader.add("params", req.getParams().toNamedList(ep_mv_list));
       }
     }
   }

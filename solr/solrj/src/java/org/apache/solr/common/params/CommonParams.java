@@ -161,6 +161,9 @@ public interface CommonParams {
   /** include the parameters in the header **/
   public static final String HEADER_ECHO_PARAMS = "echoParams";
 
+  /** which parameters in the header to include as multi-valued**/
+  public static final String HEADER_ECHO_PARAMS_MULTIVALUED = "echoParams.multiValued";
+
   /** include header in the response */
   public static final String OMIT_HEADER = "omitHeader";
 
