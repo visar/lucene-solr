@@ -55,7 +55,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
 
-
+  static final String STAGE_TIMING = "stageTiming";
   
 
   
@@ -242,10 +242,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       }
       rb.finished = new ArrayList<>();
 
-      int nextStage = 0;
+      boolean stageTiming = req.getParams().getBool(STAGE_TIMING, false);
+      final RTimer stageTimer = stageTiming ? new RTimer() : null;
+
+      int nextStage = ResponseBuilder.STAGE_START;
       do {
         rb.stage = nextStage;
         nextStage = ResponseBuilder.STAGE_DONE;
+
+        RTimer stageSubTimer = null;
+        if (stageTimer != null && rb.stage > ResponseBuilder.STAGE_START) { // dont't bother to time STAGE_START since little happens
+          stageSubTimer = stageTimer.sub("stage" + rb.stage);
+        }
 
         // call all components
         for( SearchComponent c : components ) {
@@ -285,6 +293,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
               } else {
                 params.set(CommonParams.QT, shardQt);
               }
+              params.remove(STAGE_TIMING);
               shardHandler1.submit(sreq, shard, params);
             }
           }
@@ -330,8 +339,17 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
           c.finishStage(rb);
         }
 
+        if (stageSubTimer != null ) {
+          stageSubTimer.stop();
+        }
+
         // we are done when the next stage is MAX_VALUE
-      } while (nextStage != Integer.MAX_VALUE);
+      } while (nextStage != ResponseBuilder.STAGE_DONE);
+
+      if (stageTimer != null) {
+        stageTimer.stop();
+        rsp.add("stageTiming", stageTimer.asNamedList());
+      }
     }
     
     // SOLR-5550: still provide shards.info if requested even for a short circuited distrib request
