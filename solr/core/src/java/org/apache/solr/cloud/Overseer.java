@@ -743,10 +743,8 @@ public class Overseer {
           if (replica != null) {
             Map<String, Replica> newReplicas = slice.getReplicasCopy();
             newReplicas.remove(cnn);
-            // TODO TODO TODO!!! if there are no replicas left for the slice, and the slice has no hash range, remove it
-            // if (newReplicas.size() == 0 && slice.getRange() == null) {
-            // if there are no replicas left for the slice remove it
-            if (newReplicas.size() == 0) {
+            // if there are no replicas left for the slice, and the slice has no hash range, remove it
+            if (newReplicas.size() == 0 && slice.getRange() == null) {
               slice = null;
               lastSlice = true;
             } else {
@@ -760,9 +758,9 @@ public class Overseer {
         }
         
         if (lastSlice) {
-          // remove all empty pre allocated slices
+          // remove all empty pre allocated slices which have no hash range
           for (Slice slice : coll.getSlices()) {
-            if (slice.getReplicas().size() == 0) {
+            if (slice.getReplicas().size() == 0 && slice.getRange() == null) {
               newSlices.remove(slice.getName());
             }
           }
