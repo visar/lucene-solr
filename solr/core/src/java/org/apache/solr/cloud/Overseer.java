@@ -143,6 +143,7 @@ public class Overseer {
       
       log.info("Starting to work on the main queue");
       while (!this.isClosed) {
+        boolean peekShouldContinue = false;
         isLeader = amILeader();
         if (LeaderStatus.NO == isLeader) {
           break;
@@ -153,6 +154,7 @@ public class Overseer {
         }
         synchronized (reader.getUpdateLock()) {
           try {
+            final long peekStartTime = System.currentTimeMillis();
             byte[] head = stateUpdateQueue.peek();
             
             if (head != null) {
@@ -167,6 +169,12 @@ public class Overseer {
                 workQueue.offer(head);
                 
                 stateUpdateQueue.poll();
+                final long millisSincePeekStart = System.currentTimeMillis() - peekStartTime;
+                if (millisSincePeekStart > STATE_UPDATE_DELAY) {
+                  log.info("millisSincePeekStart="+millisSincePeekStart+" - updating ClusterState before peeking further");
+                  peekShouldContinue = true;
+                  break;
+                }
                 head = stateUpdateQueue.peek();
               }
               zkClient.setData(ZkStateReader.CLUSTER_STATE,
@@ -190,6 +198,11 @@ public class Overseer {
           }
         }
         
+        if (peekShouldContinue) {
+          log.info("peeking further without the usual STATE_UPDATE_DELAY="+STATE_UPDATE_DELAY+" ms sleep");
+          continue;
+        }
+
         try {
           Thread.sleep(STATE_UPDATE_DELAY);
         } catch (InterruptedException e) {
