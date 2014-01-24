@@ -20,6 +20,7 @@ package org.apache.solr.common.params;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;
@@ -296,6 +297,21 @@ public abstract class SolrParams implements Serializable {
       if (prev!=null) return new MultiMapSolrParams(toMultiMap(params));
     }
     return new MapSolrParams(map);
+  }
+  
+  /** Create filtered SolrParams. */
+  public SolrParams toFilteredSolrParams(List<String> names) {
+    NamedList<String> nl = new NamedList<String>();
+    for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
+      final String name = it.next();
+      if (names.contains(name)) {
+        final String [] values = getParams(name);
+        for (String value : values) {
+          nl.add(name, value);
+        }
+      }
+    }
+    return toSolrParams(nl);
   }
   
   /** Convert this to a NamedList */
