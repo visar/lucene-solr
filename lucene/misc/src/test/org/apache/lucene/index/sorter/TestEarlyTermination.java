@@ -150,7 +150,7 @@ public class TestEarlyTermination extends LuceneTestCase {
         @Override
         public void setNextReader(AtomicReaderContext context) throws IOException {
           super.setNextReader(context);
-          assertFalse("segment should not be recognized as sorted as different sorter was used", segmentSorted);
+          assertFalse("segment should not be recognized as sorted as different sorter was used", getSegmentSorted());
         }
       });
     }

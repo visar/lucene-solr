@@ -66,6 +66,7 @@ public class SolrIndexConfig {
   public final int writeLockTimeout;
   public final String lockType;
   public final PluginInfo mergePolicyInfo;
+  public final PluginInfo mergeSorterInfo;
   public final PluginInfo mergeSchedulerInfo;
   public final int termIndexInterval;
   
@@ -95,6 +96,7 @@ public class SolrIndexConfig {
     lockType = LOCK_TYPE_NATIVE;
     termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
     mergePolicyInfo = null;
+    mergeSorterInfo = null;
     mergeSchedulerInfo = null;
     defaultMergePolicyClassName = TieredMergePolicy.class.getName();
     mergedSegmentWarmerInfo = null;
@@ -149,6 +151,7 @@ public class SolrIndexConfig {
 
     mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig, def.mergeSchedulerInfo);
     mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig, def.mergePolicyInfo);
+    mergeSorterInfo = getPluginInfo(prefix + "/mergeSorter", solrConfig, def.mergeSorterInfo);
     
     termIndexInterval = solrConfig.getInt(prefix + "/termIndexInterval", def.termIndexInterval);
 
@@ -287,7 +290,19 @@ public class SolrIndexConfig {
 
     if (mergePolicyInfo != null)
       SolrPluginUtils.invokeSetters(policy, mergePolicyInfo.initArgs);
-
+    
+    if (mergeSorterInfo != null) {
+      MergeSorterFactory msf = schema.getResourceLoader().newInstance(mergeSorterInfo.className, MergeSorterFactory.class);
+      SolrPluginUtils.invokeSetters(msf, mergeSorterInfo.initArgs);
+      
+      MergePolicy ms_policy = msf.get(policy, schema);
+      if (null == ms_policy) {
+        log.error("Configured <mergeSorter> factory returned null merge policy.");
+      } else {
+        policy = ms_policy;
+      }
+    }
+    
     return policy;
   }
 
