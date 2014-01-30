@@ -101,6 +101,7 @@ import java.io.InputStreamReader;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1878,7 +1879,14 @@ public final class SolrCore implements SolrInfoMBean {
     // are expecting them during handleRequest
     toLog.add("webapp", req.getContext().get("webapp"));
     toLog.add("path", req.getContext().get("path"));
-    toLog.add("params", "{" + req.getParamString() + "}");
+
+    final SolrParams params = req.getParams();
+    final String lp_list = params.get(CommonParams.LOG_PARAMS_LIST);
+    if (null == lp_list) {
+      toLog.add("params", "{" + req.getParamString() + "}");
+    } else if (lp_list.length() > 0) {
+      toLog.add("params", "{" + params.toFilteredSolrParams(Arrays.asList(lp_list.split(","))).toString() + "}");
+    }
   }
 
   /** Put status, QTime, and possibly request handler and params, in the response header */
