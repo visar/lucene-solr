@@ -30,7 +30,7 @@ import org.w3c.dom.Element;
 /**
  * Builder for {@link TermRangeFilter}
  */
-public class RangeFilterBuilder implements FilterBuilder {
+public class TermRangeFilterBuilder implements FilterBuilder {
 
   @Override
   public Filter getFilter(Element e) throws ParserException {

@@ -64,7 +64,7 @@ public class CoreParser implements QueryBuilder {
     this.analyzer = analyzer;
     this.parser = parser;
     filterFactory = new FilterBuilderFactory();
-    filterFactory.addBuilder("RangeFilter", new RangeFilterBuilder());
+    filterFactory.addBuilder("TermRangeFilter", new TermRangeFilterBuilder());
     filterFactory.addBuilder("NumericRangeFilter", new NumericRangeFilterBuilder());
 
     queryFactory = new QueryBuilderFactory();
@@ -81,6 +81,7 @@ public class CoreParser implements QueryBuilder {
     }
     queryFactory.addBuilder("FilteredQuery", new FilteredQueryBuilder(filterFactory, queryFactory));
     queryFactory.addBuilder("ConstantScoreQuery", new ConstantScoreQueryBuilder(filterFactory));
+    queryFactory.addBuilder("PhraseQuery", new PhraseQueryBuilder(analyzer));
 
     filterFactory.addBuilder("CachedFilter", new CachedFilterBuilder(queryFactory,
         filterFactory, maxNumCachedFilters));

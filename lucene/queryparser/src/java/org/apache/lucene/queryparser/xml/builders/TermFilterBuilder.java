@@ -6,12 +6,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.queries.TermFilter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.FilterBuilder;
 import org.apache.lucene.queryparser.xml.ParserException;
-import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.w3c.dom.Element;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,28 +31,26 @@ import org.w3c.dom.Element;
  */
 
 /**
- * Builder for {@link TermQuery}
+ * Builder for {@link TermFilter}
  */
-public class TermQueryBuilder implements QueryBuilder {
+public class TermFilterBuilder implements FilterBuilder {
 
-  protected Analyzer analyzer;
+  protected final Analyzer analyzer;
 
-  public TermQueryBuilder() {
+  public TermFilterBuilder() {
     this.analyzer = null;
-}
+  }
 
-  public TermQueryBuilder(Analyzer analyzer) {
-      this.analyzer = analyzer;
+  public TermFilterBuilder(Analyzer analyzer) {
+    this.analyzer = analyzer;
   }
 
   @Override
-  public Query getQuery(Element e) throws ParserException {
+  public Filter getFilter(Element e) throws ParserException {
     String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String value = DOMUtils.getNonBlankTextOrFail(e);
     if (null == analyzer) {
-      TermQuery tq = new TermQuery(new Term(field, value));
-      tq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-      return tq;
+      return new TermFilter(new Term(field, value));
     } else {
       try {
         TokenStream ts = analyzer.tokenStream(field, value);
@@ -61,18 +59,17 @@ public class TermQueryBuilder implements QueryBuilder {
         BytesRef bytes = termsRefAtt.getBytesRef();
         ts.reset();
         
-        TermQuery tq = null;
+        TermFilter tf = null;
         if (ts.incrementToken()) {
           termsRefAtt.fillBytesRef();
-          tq = new TermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
-          tq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+          tf = new TermFilter(new Term(field, BytesRef.deepCopyOf(bytes)));
         }
         ts.close();
-        return tq;
+        return tf;
       } catch (IOException ioe) {
         throw new ParserException("IOException parsing value:" + value);
       }    
     }
   }
-
+  
 }

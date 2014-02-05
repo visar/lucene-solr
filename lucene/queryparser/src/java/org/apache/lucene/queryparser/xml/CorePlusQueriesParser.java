@@ -23,10 +23,13 @@ import org.apache.lucene.queryparser.xml.builders.*;
 
 /**
  * Assembles a QueryBuilder which uses Query objects from
- * Lucene's <code>sandbox</code> and <code>queries</code>
- * modules in addition to core queries.
+ * Lucene's <code>queries</code> module in addition to core
+ * queries.
+ * 
+ * Unlike CorePlusExtensionsParser this QueryBuilder does not use
+ * Query objects from Lucene's <code>sandbox</code> module. 
  */
-public class CorePlusExtensionsParser extends CorePlusQueriesParser {
+public class CorePlusQueriesParser extends CoreParser {
 
   /**
    * Construct an XML parser that uses a single instance QueryParser for handling
@@ -34,7 +37,7 @@ public class CorePlusExtensionsParser extends CorePlusQueriesParser {
    *
    * @param parser A QueryParser which will be synchronized on during parse calls.
    */
-  public CorePlusExtensionsParser(Analyzer analyzer, QueryParser parser) {
+  public CorePlusQueriesParser(Analyzer analyzer, QueryParser parser) {
     this(null, analyzer, parser);
   }
 
@@ -43,14 +46,17 @@ public class CorePlusExtensionsParser extends CorePlusQueriesParser {
    *
    * @param defaultField The default field name used by QueryParsers constructed for UserQuery tags
    */
-  public CorePlusExtensionsParser(String defaultField, Analyzer analyzer) {
+  public CorePlusQueriesParser(String defaultField, Analyzer analyzer) {
     this(defaultField, analyzer, null);
   }
 
-  private CorePlusExtensionsParser(String defaultField, Analyzer analyzer, QueryParser parser) {
+  protected CorePlusQueriesParser(String defaultField, Analyzer analyzer, QueryParser parser) {
     super(defaultField, analyzer, parser);
-    filterFactory.addBuilder("DuplicateFilter", new DuplicateFilterBuilder());
-    queryFactory.addBuilder("FuzzyLikeThisQuery", new FuzzyLikeThisQueryBuilder(analyzer));
+    filterFactory.addBuilder("TermsFilter", new TermsFilterBuilder(analyzer));
+    filterFactory.addBuilder("BooleanFilter", new BooleanFilterBuilder(filterFactory));
+    String fields[] = {"contents"};
+    queryFactory.addBuilder("LikeThisQuery", new LikeThisQueryBuilder(analyzer, fields));
+    queryFactory.addBuilder("BoostingQuery", new BoostingQueryBuilder(queryFactory));
 
   }
 }
