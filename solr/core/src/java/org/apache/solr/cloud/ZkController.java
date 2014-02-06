@@ -733,16 +733,19 @@ public final class ZkController {
       configName = props.getStr(CONFIGNAME_PROP);
     }
     
-    if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
-      log.error("Specified config does not exist in ZooKeeper:" + configName);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "Specified config does not exist in ZooKeeper:" + configName);
+    if (configName != null) {
+      if (!zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
+        log.error("Specified config does not exist in ZooKeeper:" + configName);
+        throw new ZooKeeperException(ErrorCode.SERVER_ERROR,
+            "Specified config does not exist in ZooKeeper:" + configName);
+      } else if (log.isInfoEnabled()) {
+        log.info("path={} {}={} specified config exists in ZooKeeper",
+            new Object[] {path, CONFIGNAME_PROP, configName});
+      }
     }
 
     return configName;
   }
-
-
 
   /**
    * Register shard with ZooKeeper.
