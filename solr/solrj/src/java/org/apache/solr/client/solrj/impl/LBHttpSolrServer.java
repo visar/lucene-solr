@@ -25,6 +25,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.SolrException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
@@ -93,6 +96,8 @@ public class LBHttpSolrServer extends SolrServer {
   private final boolean clientIsInternal;
   private final AtomicInteger counter = new AtomicInteger(-1);
 
+  protected static Logger log = LoggerFactory.getLogger(LBHttpSolrServer.class);
+  
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
   private volatile ResponseParser parser;
   private volatile RequestWriter requestWriter;
@@ -297,7 +302,7 @@ public class LBHttpSolrServer extends SolrServer {
       } catch (SolrException e) {
         // we retry on 404 or 403 or 503 - you can see this on solr shutdown
         if (e.code() == 404 || e.code() == 403 || e.code() == 503 || e.code() == 500) {
-          ex = addZombie(server, e);
+          ex = addZombie(server, e, req.getRequest(), SolrException.getRootCause(e));
         } else {
           // Server is alive but the request was likely malformed or invalid
           throw e;
@@ -308,13 +313,13 @@ public class LBHttpSolrServer extends SolrServer {
        //     || e.getMessage().contains("java.net.SocketException")
        //     || e.getMessage().contains("java.net.ConnectException")
       } catch (SocketException e) {
-        ex = addZombie(server, e);
+        ex = addZombie(server, e, req.getRequest(), null);
       } catch (SocketTimeoutException e) {
-        ex = addZombie(server, e);
+        ex = addZombie(server, e, req.getRequest(), null);
       } catch (SolrServerException e) {
         Throwable rootCause = e.getRootCause();
         if (rootCause instanceof IOException) {
-          ex = addZombie(server, e);
+          ex = addZombie(server, e, req.getRequest(), rootCause);
         } else {
           throw e;
         }
@@ -366,7 +371,8 @@ public class LBHttpSolrServer extends SolrServer {
 
   }
 
-  protected Exception addZombie(HttpSolrServer server, Exception e) {
+  protected Exception addZombie(HttpSolrServer server, Exception e, SolrRequest req, Throwable rootCause) {
+    log.info("addZombie server={} e={} req={} rootCause={}", new Object[] {server, e, req, rootCause});
 
     ServerWrapper wrapper;
 
@@ -536,6 +542,7 @@ public class LBHttpSolrServer extends SolrServer {
     try {
       zombieServer.lastChecked = currTime;
       QueryResponse resp = zombieServer.solrServer.query(solrQuery);
+      log.info("checkAZombieServer zombieServer={} resp={}", zombieServer, resp);
       if (resp.getStatus() == 0) {
         // server has come back up.
         // make sure to remove from zombies before adding to alive to avoid a race condition
@@ -546,12 +553,17 @@ public class LBHttpSolrServer extends SolrServer {
           wrapper.failedPings = 0;
           if (wrapper.standard) {
             addToAlive(wrapper);
+            log.info("checkAZombieServer zombieServer={} - added to alive", zombieServer);
+          } else {
+            log.info("checkAZombieServer zombieServer={} - not added to alive", zombieServer);
           }
         } else {
           // something else already moved the server from zombie to alive
+          log.info("checkAZombieServer zombieServer={} - something else already moved the server from zombie to alive", zombieServer);
         }
       }
     } catch (Exception e) {
+      log.info("checkAZombieServer zombieServer={} - server is still down (e={})", zombieServer, e);
       //Expected. The server is still down.
       zombieServer.failedPings++;
 
@@ -559,6 +571,8 @@ public class LBHttpSolrServer extends SolrServer {
       // then simply drop it after a certain number of failed pings.
       if (!zombieServer.standard && zombieServer.failedPings >= NONSTANDARD_PING_LIMIT) {
         zombieServers.remove(zombieServer.getKey());
+        log.info("checkAZombieServer zombieServer={} - removed from zombies (failedPings={} >= NONSTANDARD_PING_LIMIT={})",
+            new Object[] {zombieServer, zombieServer.failedPings, NONSTANDARD_PING_LIMIT});
       }
     }
   }
