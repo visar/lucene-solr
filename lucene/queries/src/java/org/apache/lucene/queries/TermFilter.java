@@ -57,6 +57,18 @@ final public class TermFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+    final DocsEnum docsEnum = getDocsEnum(context, acceptDocs, DocsEnum.FLAG_NONE);
+
+    return new DocIdSet() {
+      @Override
+      public DocIdSetIterator iterator() throws IOException {
+        return docsEnum;
+      }
+
+    };
+  }
+
+  public DocsEnum getDocsEnum(AtomicReaderContext context, final Bits acceptDocs, final int flags) throws IOException {
     Terms terms = context.reader().terms(term.field());
     if (terms == null) {
       return null;
@@ -66,13 +78,8 @@ final public class TermFilter extends Filter {
     if (!termsEnum.seekExact(term.bytes())) {
       return null;
     }
-    return new DocIdSet() {
-      @Override
-      public DocIdSetIterator iterator() throws IOException {
-        return termsEnum.docs(acceptDocs, null, DocsEnum.FLAG_NONE);
-      }
-
-    };
+    
+    return termsEnum.docs(acceptDocs, null, flags);
   }
 
   @Override

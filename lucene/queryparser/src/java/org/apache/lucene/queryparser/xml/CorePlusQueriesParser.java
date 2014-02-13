@@ -52,11 +52,21 @@ public class CorePlusQueriesParser extends CoreParser {
 
   protected CorePlusQueriesParser(String defaultField, Analyzer analyzer, QueryParser parser) {
     super(defaultField, analyzer, parser);
-    filterFactory.addBuilder("TermsFilter", new TermsFilterBuilder(analyzer));
+    
+    {
+      FilterBuilder termFilterBuilder = new TermFilterBuilder(termBuilder);
+      filterFactory.addBuilder("TermFilter", termFilterBuilder);
+      filterFactory.addBuilder("TermFreqFilter", new TermFreqBuilder(termFilterBuilder, null /* termQueryBuilder */));
+    }
+    {
+      FilterBuilder termsFilterBuilder = new TermsFilterBuilder(termBuilder);
+      filterFactory.addBuilder("TermsFilter", termsFilterBuilder);
+      filterFactory.addBuilder("TermsFreqFilter", new TermFreqBuilder(termsFilterBuilder, null /* termsQueryBuilder */));
+    }
     filterFactory.addBuilder("BooleanFilter", new BooleanFilterBuilder(filterFactory));
     String fields[] = {"contents"};
     queryFactory.addBuilder("LikeThisQuery", new LikeThisQueryBuilder(analyzer, fields));
     queryFactory.addBuilder("BoostingQuery", new BoostingQueryBuilder(queryFactory));
-
+    
   }
 }

@@ -1,18 +1,13 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-import java.io.IOException;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.queries.TermFilter;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.TermBuilder;
 import org.apache.lucene.queryparser.xml.FilterBuilder;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Element;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -35,41 +30,31 @@ import org.w3c.dom.Element;
  */
 public class TermFilterBuilder implements FilterBuilder {
 
-  protected final Analyzer analyzer;
+  protected final TermBuilder termBuilder;
 
-  public TermFilterBuilder() {
-    this.analyzer = null;
+  public TermFilterBuilder(TermBuilder termBuilder) {
+    this.termBuilder = termBuilder;
   }
 
-  public TermFilterBuilder(Analyzer analyzer) {
-    this.analyzer = analyzer;
+  private class TermFilterProcessor implements TermBuilder.TermProcessor {
+    public TermFilter tf = null;
+    public void process(Term t) throws ParserException {
+      if (null == tf) {
+        tf = new TermFilter(t);        
+      } else {
+        throw new ParserException("TermFilter already set: " + tf);        
+      }
+    }          
   }
-
+  
   @Override
-  public Filter getFilter(Element e) throws ParserException {
-    String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-    String value = DOMUtils.getNonBlankTextOrFail(e);
-    if (null == analyzer) {
-      return new TermFilter(new Term(field, value));
-    } else {
-      try {
-        TokenStream ts = analyzer.tokenStream(field, value);
-        TermToBytesRefAttribute termsRefAtt = ts
-            .addAttribute(TermToBytesRefAttribute.class);
-        BytesRef bytes = termsRefAtt.getBytesRef();
-        ts.reset();
-        
-        TermFilter tf = null;
-        if (ts.incrementToken()) {
-          termsRefAtt.fillBytesRef();
-          tf = new TermFilter(new Term(field, BytesRef.deepCopyOf(bytes)));
-        }
-        ts.close();
-        return tf;
-      } catch (IOException ioe) {
-        throw new ParserException("IOException parsing value:" + value);
-      }    
-    }
+  public Filter getFilter(final Element e) throws ParserException {
+    
+    TermFilterProcessor tp = new TermFilterProcessor();
+
+    termBuilder.extractTerms(tp, e);
+    
+    return tp.tf;
   }
   
 }

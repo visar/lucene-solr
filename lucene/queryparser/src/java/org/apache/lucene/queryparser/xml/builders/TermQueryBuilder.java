@@ -1,18 +1,14 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-import java.io.IOException;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.queryparser.xml.TermBuilder;
 import org.w3c.dom.Element;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -35,44 +31,36 @@ import org.w3c.dom.Element;
  */
 public class TermQueryBuilder implements QueryBuilder {
 
-  protected Analyzer analyzer;
+  protected final TermBuilder termBuilder;
 
-  public TermQueryBuilder() {
-    this.analyzer = null;
-}
-
-  public TermQueryBuilder(Analyzer analyzer) {
-      this.analyzer = analyzer;
+  public TermQueryBuilder(TermBuilder termBuilder) {
+    this.termBuilder = termBuilder;
   }
 
+  private class TermQueryProcessor implements TermBuilder.TermProcessor {
+    private final float boost;
+    TermQueryProcessor(final float boost) {
+      this.boost = boost;
+    }
+    public TermQuery tq = null;
+    public void process(Term t) throws ParserException {
+      if (null == tq) {
+        tq = new TermQuery(t);        
+        tq.setBoost(boost);
+      } else {
+        throw new ParserException("TermQuery already set: " + tq);        
+      }
+    }          
+  }
+  
   @Override
   public Query getQuery(Element e) throws ParserException {
-    String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-    String value = DOMUtils.getNonBlankTextOrFail(e);
-    if (null == analyzer) {
-      TermQuery tq = new TermQuery(new Term(field, value));
-      tq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-      return tq;
-    } else {
-      try {
-        TokenStream ts = analyzer.tokenStream(field, value);
-        TermToBytesRefAttribute termsRefAtt = ts
-            .addAttribute(TermToBytesRefAttribute.class);
-        BytesRef bytes = termsRefAtt.getBytesRef();
-        ts.reset();
-        
-        TermQuery tq = null;
-        if (ts.incrementToken()) {
-          termsRefAtt.fillBytesRef();
-          tq = new TermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
-          tq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-        }
-        ts.close();
-        return tq;
-      } catch (IOException ioe) {
-        throw new ParserException("IOException parsing value:" + value);
-      }    
-    }
+    
+    TermQueryProcessor tp = new TermQueryProcessor(DOMUtils.getAttribute(e, "boost", 1.0f));
+    
+    termBuilder.extractTerms(tp, e);
+    
+    return tp.tq;
   }
 
 }

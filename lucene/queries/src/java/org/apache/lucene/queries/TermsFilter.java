@@ -177,6 +177,14 @@ public final class TermsFilter extends Filter {
   
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    return getDocIdSet(context, acceptDocs, DocsEnum.FLAG_NONE, null);
+  }
+
+  public interface DocsEnumAdapter {
+    public abstract DocsEnum get(DocsEnum docsEnum) throws IOException;
+  }
+  
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs, int flags, DocsEnumAdapter docsEnumAdapter) throws IOException {
     final AtomicReader reader = context.reader();
     FixedBitSet result = null;  // lazy init if needed - no need to create a big bitset ahead of time
     final Fields fields = reader.fields();
@@ -194,7 +202,8 @@ public final class TermsFilter extends Filter {
           spare.offset = offsets[i];
           spare.length = offsets[i+1] - offsets[i];
           if (termsEnum.seekExact(spare)) {
-            docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE); // no freq since we don't need them
+            docs = termsEnum.docs(acceptDocs, docs, flags);
+            if (null != docsEnumAdapter) docs = docsEnumAdapter.get(docs);
             if (result == null) {
               if (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                 result = new FixedBitSet(reader.maxDoc());
