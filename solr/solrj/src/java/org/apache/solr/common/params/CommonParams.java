@@ -149,6 +149,13 @@ public interface CommonParams {
    */
   public static final String TIME_ALLOWED = "timeAllowed";
   
+  /**
+   * Permit use of EarlySegmentTerminatingCollector collectors,
+   * e.g. EarlyTerminatingSortingCollector.
+   */
+  public static final String SEGMENT_TERMINATE_EARLY = "segmentTerminateEarly";
+  public static final boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
+  
   /** 'true' if the header should include the handler name */
   public static final String HEADER_ECHO_HANDLER = "echoHandler";
   

@@ -386,6 +386,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     newSchema.similarity = similarity;
     newSchema.similarityFactory = similarityFactory;
     newSchema.isExplicitSimilarity = isExplicitSimilarity;
+    newSchema.mergeSorterKeyFactory = mergeSorterKeyFactory;
+    newSchema.isExplicitMergeSorterKey = isExplicitMergeSorterKey;
     newSchema.uniqueKeyField = uniqueKeyField;
     newSchema.uniqueKeyFieldName = uniqueKeyFieldName;
     newSchema.uniqueKeyFieldType = uniqueKeyFieldType;
