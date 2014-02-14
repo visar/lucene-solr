@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.EarlySegmentTerminatingCollector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
@@ -61,16 +61,14 @@ import org.apache.lucene.search.TotalHitCountCollector;
  * 
  * @lucene.experimental
  */
-public class EarlyTerminatingSortingCollector extends Collector {
+public class EarlyTerminatingSortingCollector extends EarlySegmentTerminatingCollector {
 
-  protected final Collector in;
-  protected final Sorter sorter;
-  protected final int numDocsToCollect;
+  private final Sorter sorter;
+  private final int numDocsToCollectIfSorted; // number of documents to collect for sorted segments
   
-  protected int segmentTotalCollect;
-  protected boolean segmentSorted;
-
-  private int numCollected;
+  private boolean segmentSorted;
+  protected boolean getSegmentSorted() { return segmentSorted; }
+  protected void setSegmentSorted(boolean val) { segmentSorted = val; }
 
   /**
    * Create a new {@link EarlyTerminatingSortingCollector} instance.
@@ -86,12 +84,12 @@ public class EarlyTerminatingSortingCollector extends Collector {
    *          hits.
    */
   public EarlyTerminatingSortingCollector(Collector in, Sorter sorter, int numDocsToCollect) {
+    super(in);
     if (numDocsToCollect <= 0) {
-      throw new IllegalStateException("numDocsToCollect must always be > 0, got " + segmentTotalCollect);
+      throw new IllegalStateException("numDocsToCollect must always be > 0, got " + numDocsToCollect);
     }
-    this.in = in;
     this.sorter = sorter;
-    this.numDocsToCollect = numDocsToCollect;
+    this.numDocsToCollectIfSorted = numDocsToCollect;
   }
 
   @Override
@@ -100,19 +98,10 @@ public class EarlyTerminatingSortingCollector extends Collector {
   }
 
   @Override
-  public void collect(int doc) throws IOException {
-    in.collect(doc);
-    if (++numCollected >= segmentTotalCollect) {
-      throw new CollectionTerminatedException();
-    }
-  }
-
-  @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
-    in.setNextReader(context);
+    super.setNextReader(context);
     segmentSorted = SortingMergePolicy.isSorted(context.reader(), sorter);
-    segmentTotalCollect = segmentSorted ? numDocsToCollect : Integer.MAX_VALUE;
-    numCollected = 0;
+    setNumDocsToCollect(segmentSorted ? numDocsToCollectIfSorted : Integer.MAX_VALUE);
   }
 
   @Override
