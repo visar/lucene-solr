@@ -831,6 +831,7 @@ public class QueryComponent extends SearchComponent
         }
         // now that we've added the shard info, let's only proceed if we have no error.
         if (srsp.getException() != null) {
+          partialResults = true;
           continue;
         }
 
