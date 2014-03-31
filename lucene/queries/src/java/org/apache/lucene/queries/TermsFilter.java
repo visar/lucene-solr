@@ -44,11 +44,11 @@ public final class TermsFilter extends Filter {
 
   /*
    * this class is often used for large number of terms in a single field.
-   * to optimize for this case and to be filter-cache friendly we 
+   * to optimize for this case and to be filter-cache friendly we
    * serialize all terms into a single byte array and store offsets
    * in a parallel array to keep the # of object constant and speed up
    * equals / hashcode.
-   * 
+   *
    * This adds quite a bit of complexity but allows large term filters to
    * be efficient for GC and cache-lookups
    */
@@ -57,7 +57,7 @@ public final class TermsFilter extends Filter {
   private final TermsAndField[] termsAndFields;
   private final int hashCode; // cached hashcode for fast cache lookups
   private static final int PRIME = 31;
-  
+
   /**
    * Creates a new {@link TermsFilter} from the given list. The list
    * can contain duplicate terms and multiple fields.
@@ -76,7 +76,7 @@ public final class TermsFilter extends Filter {
         return null;
       }}, terms.size());
   }
-  
+
   /**
    * Creates a new {@link TermsFilter} from the given {@link BytesRef} list for
    * a single field.
@@ -94,7 +94,7 @@ public final class TermsFilter extends Filter {
       }
     }, terms.size());
   }
-  
+
   /**
    * Creates a new {@link TermsFilter} from the given {@link BytesRef} array for
    * a single field.
@@ -103,7 +103,7 @@ public final class TermsFilter extends Filter {
     // this ctor prevents unnecessary Term creations
    this(field, Arrays.asList(terms));
   }
-  
+
   /**
    * Creates a new {@link TermsFilter} from the given array. The array can
    * contain duplicate terms and multiple fields.
@@ -111,8 +111,8 @@ public final class TermsFilter extends Filter {
   public TermsFilter(final Term... terms) {
     this(Arrays.asList(terms));
   }
-  
-  
+
+
   private TermsFilter(FieldAndTermEnum iter, int length) {
     // TODO: maybe use oal.index.PrefixCodedTerms instead?
     // If number of terms is more than a few hundred it
@@ -144,7 +144,7 @@ public final class TermsFilter extends Filter {
         // deduplicate
         if (previousField.equals(currentField)) {
           if (previousTerm.bytesEquals(currentTerm)){
-            continue;            
+            continue;
           }
         } else {
           final int start = lastTermsAndField == null ? 0 : lastTermsAndField.end;
@@ -158,7 +158,7 @@ public final class TermsFilter extends Filter {
         serializedTerms = ArrayUtil.grow(serializedTerms, lastEndOffset+currentTerm.length);
       }
       System.arraycopy(currentTerm.bytes, currentTerm.offset, serializedTerms, lastEndOffset, currentTerm.length);
-      offsets[index] = lastEndOffset; 
+      offsets[index] = lastEndOffset;
       lastEndOffset += currentTerm.length;
       index++;
       previousTerm = currentTerm;
@@ -171,12 +171,20 @@ public final class TermsFilter extends Filter {
     this.termsBytes = ArrayUtil.shrink(serializedTerms, lastEndOffset);
     this.termsAndFields = termsAndFields.toArray(new TermsAndField[termsAndFields.size()]);
     this.hashCode = hash;
-    
+
   }
-  
-  
+
+
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    return getDocIdSet(context, acceptDocs, DocsEnum.FLAG_NONE, null);
+  }
+
+  public interface DocsEnumAdapter {
+    public abstract DocsEnum get(DocsEnum docsEnum) throws IOException;
+  }
+
+  public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs, int flags, DocsEnumAdapter docsEnumAdapter) throws IOException {
     final AtomicReader reader = context.reader();
     FixedBitSet result = null;  // lazy init if needed - no need to create a big bitset ahead of time
     final Fields fields = reader.fields();
@@ -194,7 +202,8 @@ public final class TermsFilter extends Filter {
           spare.offset = offsets[i];
           spare.length = offsets[i+1] - offsets[i];
           if (termsEnum.seekExact(spare)) {
-            docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE); // no freq since we don't need them
+            docs = termsEnum.docs(acceptDocs, docs, flags);
+            if (null != docsEnumAdapter) docs = docsEnumAdapter.get(docs);
             if (result == null) {
               if (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                 result = new FixedBitSet(reader.maxDoc());
@@ -220,7 +229,7 @@ public final class TermsFilter extends Filter {
     if ((obj == null) || (obj.getClass() != this.getClass())) {
       return false;
     }
-    
+
     TermsFilter test = (TermsFilter) obj;
     // first check the fields before even comparing the bytes
     if (test.hashCode == hashCode && Arrays.equals(termsAndFields, test.termsAndFields)) {
@@ -238,7 +247,7 @@ public final class TermsFilter extends Filter {
   public int hashCode() {
     return hashCode;
   }
-  
+
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
@@ -260,13 +269,13 @@ public final class TermsFilter extends Filter {
 
     return builder.toString();
   }
-  
+
   private static final class TermsAndField {
     final int start;
     final int end;
     final String field;
-    
-    
+
+
     TermsAndField(int start, int end, String field) {
       super();
       this.start = start;
@@ -283,7 +292,7 @@ public final class TermsFilter extends Filter {
       result = prime * result + start;
       return result;
     }
-    
+
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
@@ -297,23 +306,23 @@ public final class TermsFilter extends Filter {
       if (start != other.start) return false;
       return true;
     }
-    
+
   }
-  
+
   private static abstract class FieldAndTermEnum {
     protected String field;
-    
+
     public abstract BytesRef next();
-    
+
     public FieldAndTermEnum() {}
-    
+
     public FieldAndTermEnum(String field) { this.field = field; }
-    
+
     public String field() {
       return field;
     }
   }
-  
+
   /*
    * simple utility that returns the in-place sorted list
    */
