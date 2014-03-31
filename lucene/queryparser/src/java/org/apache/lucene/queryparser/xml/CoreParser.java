@@ -75,10 +75,12 @@ public class CoreParser implements QueryBuilder {
     {
       QueryBuilder termQueryBuilder = new TermQueryBuilder(termBuilder);
       queryFactory.addBuilder("TermQuery", termQueryBuilder);
+      queryFactory.addBuilder("TermFreqQuery", new TermFreqBuilder(null /* termFilterBuilder */, termQueryBuilder));
     }
     {
       QueryBuilder termsQueryBuilder = new TermsQueryBuilder(termBuilder);
       queryFactory.addBuilder("TermsQuery", termsQueryBuilder);
+      queryFactory.addBuilder("TermsFreqQuery", new TermFreqBuilder(null /* termsFilterBuilder */, termsQueryBuilder));
     }
     queryFactory.addBuilder("MatchAllDocsQuery", new MatchAllDocsQueryBuilder());
     queryFactory.addBuilder("BooleanQuery", new BooleanQueryBuilder(queryFactory));
