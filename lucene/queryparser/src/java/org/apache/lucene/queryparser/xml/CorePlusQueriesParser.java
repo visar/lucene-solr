@@ -56,10 +56,12 @@ public class CorePlusQueriesParser extends CoreParser {
     {
       FilterBuilder termFilterBuilder = new TermFilterBuilder(termBuilder);
       filterFactory.addBuilder("TermFilter", termFilterBuilder);
+      filterFactory.addBuilder("TermFreqFilter", new TermFreqBuilder(termFilterBuilder, null /* termQueryBuilder */));
     }
     {
       FilterBuilder termsFilterBuilder = new TermsFilterBuilder(termBuilder);
       filterFactory.addBuilder("TermsFilter", termsFilterBuilder);
+      filterFactory.addBuilder("TermsFreqFilter", new TermFreqBuilder(termsFilterBuilder, null /* termsQueryBuilder */));
     }
     filterFactory.addBuilder("BooleanFilter", new BooleanFilterBuilder(filterFactory));
     String fields[] = {"contents"};
