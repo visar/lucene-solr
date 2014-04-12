@@ -35,6 +35,8 @@ public class CoreParser implements QueryBuilder {
 
   protected Analyzer analyzer;
   protected QueryParser parser;
+  protected TermBuilder termBuilder;
+
   protected QueryBuilderFactory queryFactory;
   protected FilterBuilderFactory filterFactory;
   //Controls the max size of the LRU cache used for QueryFilter objects parsed.
@@ -63,13 +65,21 @@ public class CoreParser implements QueryBuilder {
   protected CoreParser(String defaultField, Analyzer analyzer, QueryParser parser) {
     this.analyzer = analyzer;
     this.parser = parser;
+    this.termBuilder = new TermBuilder(analyzer);
+
     filterFactory = new FilterBuilderFactory();
     filterFactory.addBuilder("RangeFilter", new RangeFilterBuilder());
     filterFactory.addBuilder("NumericRangeFilter", new NumericRangeFilterBuilder());
 
     queryFactory = new QueryBuilderFactory();
-    queryFactory.addBuilder("TermQuery", new TermQueryBuilder());
-    queryFactory.addBuilder("TermsQuery", new TermsQueryBuilder(analyzer));
+    {
+      QueryBuilder termQueryBuilder = new TermQueryBuilder(termBuilder);
+      queryFactory.addBuilder("TermQuery", termQueryBuilder);
+    }
+    {
+      QueryBuilder termsQueryBuilder = new TermsQueryBuilder(termBuilder);
+      queryFactory.addBuilder("TermsQuery", termsQueryBuilder);
+    }
     queryFactory.addBuilder("MatchAllDocsQuery", new MatchAllDocsQueryBuilder());
     queryFactory.addBuilder("BooleanQuery", new BooleanQueryBuilder(queryFactory));
     queryFactory.addBuilder("NumericRangeQuery", new NumericRangeQueryBuilder());
@@ -81,6 +91,7 @@ public class CoreParser implements QueryBuilder {
     }
     queryFactory.addBuilder("FilteredQuery", new FilteredQueryBuilder(filterFactory, queryFactory));
     queryFactory.addBuilder("ConstantScoreQuery", new ConstantScoreQueryBuilder(filterFactory));
+    queryFactory.addBuilder("PhraseQuery", new PhraseQueryBuilder(analyzer));
 
     filterFactory.addBuilder("CachedFilter", new CachedFilterBuilder(queryFactory,
         filterFactory, maxNumCachedFilters));
