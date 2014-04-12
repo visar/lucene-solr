@@ -1,21 +1,15 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.queryparser.xml.TermBuilder;
 import org.w3c.dom.Element;
-
-import java.io.IOException;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -39,41 +33,33 @@ import java.io.IOException;
  */
 public class TermsQueryBuilder implements QueryBuilder {
 
-  private final Analyzer analyzer;
+  private final TermBuilder termBuilder;
 
-  public TermsQueryBuilder(Analyzer analyzer) {
-    this.analyzer = analyzer;
+  public TermsQueryBuilder(TermBuilder termBuilder) {
+    this.termBuilder = termBuilder;
+  }
+
+  private class TermsQueryProcessor implements TermBuilder.TermProcessor {
+    private final BooleanQuery bq;
+    TermsQueryProcessor(BooleanQuery bq) {
+      this.bq = bq;
+    }
+    public void process(Term t) throws ParserException {
+      bq.add(new BooleanClause(new TermQuery(t), BooleanClause.Occur.SHOULD));
+    }
   }
 
   @Override
   public Query getQuery(Element e) throws ParserException {
-    String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-    String text = DOMUtils.getNonBlankTextOrFail(e);
 
-    BooleanQuery bq = new BooleanQuery(DOMUtils.getAttribute(e, "disableCoord", false));
+    final BooleanQuery bq = new BooleanQuery(DOMUtils.getAttribute(e, "disableCoord", false));
     bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e, "minimumNumberShouldMatch", 0));
-    TokenStream ts = null;
-    try {
-      ts = analyzer.tokenStream(fieldName, text);
-      TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-      Term term = null;
-      BytesRef bytes = termAtt.getBytesRef();
-      ts.reset();
-      while (ts.incrementToken()) {
-        termAtt.fillBytesRef();
-        term = new Term(fieldName, BytesRef.deepCopyOf(bytes));
-        bq.add(new BooleanClause(new TermQuery(term), BooleanClause.Occur.SHOULD));
-      }
-      ts.end();
-    }
-    catch (IOException ioe) {
-      throw new RuntimeException("Error constructing terms from index:" + ioe);
-    } finally {
-      IOUtils.closeWhileHandlingException(ts);
-    }
-
     bq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-    return bq;
+    final TermsQueryProcessor tp = new TermsQueryProcessor(bq);
+
+    termBuilder.extractTerms(tp, e);
+
+    return tp.bq;
   }
 
 }

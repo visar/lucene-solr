@@ -2,14 +2,11 @@ package org.apache.lucene.queryparser.xml.builders;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.queries.TermsFilter;
-import org.apache.lucene.queryparser.xml.FilterBuilder;
+import org.apache.lucene.queries.TermFilter;
 import org.apache.lucene.queryparser.xml.TermBuilder;
+import org.apache.lucene.queryparser.xml.FilterBuilder;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Element;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -29,35 +26,35 @@ import java.util.List;
  */
 
 /**
- * Builder for {@link TermsFilter}
+ * Builder for {@link TermFilter}
  */
-public class TermsFilterBuilder implements FilterBuilder {
+public class TermFilterBuilder implements FilterBuilder {
 
-  private final TermBuilder termBuilder;
+  protected final TermBuilder termBuilder;
 
-  public TermsFilterBuilder(TermBuilder termBuilder) {
+  public TermFilterBuilder(TermBuilder termBuilder) {
     this.termBuilder = termBuilder;
   }
 
-  private class TermsFilterProcessor implements TermBuilder.TermProcessor {
-    public List<Term> terms = new ArrayList<Term>();
+  private class TermFilterProcessor implements TermBuilder.TermProcessor {
+    public TermFilter tf = null;
     public void process(Term t) throws ParserException {
-      terms.add(t);
+      if (null == tf) {
+        tf = new TermFilter(t);
+      } else {
+        throw new ParserException("TermFilter already set: " + tf);
+      }
     }
   }
 
-  /*
-    * (non-Javadoc)
-    *
-    * @see org.apache.lucene.xmlparser.FilterBuilder#process(org.w3c.dom.Element)
-    */
   @Override
   public Filter getFilter(final Element e) throws ParserException {
 
-    TermsFilterProcessor tp = new TermsFilterProcessor();
+    TermFilterProcessor tp = new TermFilterProcessor();
 
     termBuilder.extractTerms(tp, e);
 
-    return new TermsFilter(tp.terms);
+    return tp.tf;
   }
+
 }
