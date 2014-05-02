@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.intervals.IntervalIterator;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -73,6 +75,11 @@ public class ScoreCachingWrappingScorer extends Scorer {
   @Override
   public int advance(int target) throws IOException {
     return scorer.advance(target);
+  }
+
+  @Override
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    return scorer.intervals(collectIntervals);
   }
 
   @Override
