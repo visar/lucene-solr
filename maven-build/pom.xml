@@ -24,9 +24,9 @@
     <version>13</version>
     <relativePath />
   </parent>
-  <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+  <groupId>org.apache.lucene</groupId>
   <artifactId>lucene-solr-grandparent</artifactId>
-  <version>r1581360-intervals-1.3-SNAPSHOT</version>
+  <version>4.8-r1589872</version>
   <packaging>pom</packaging>
   <name>Grandparent POM for Apache Lucene Core and Apache Solr</name>
   <description>Grandparent POM for Apache Lucene Core and Apache Solr</description>
@@ -134,27 +134,27 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-analyzers-common</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-analyzers-icu</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
@@ -164,31 +164,31 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-analyzers-kuromoji</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-analyzers-morfologik</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
@@ -206,16 +206,16 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-analyzers-phonetic</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
@@ -225,46 +225,46 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-analyzers-smartcn</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-analyzers-stempel</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-analyzers-uima</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
@@ -282,40 +282,40 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-benchmark</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-facet</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
@@ -341,63 +341,63 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-classification</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-codecs</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-core</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-demo</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-facet</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
@@ -419,16 +419,16 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-expressions</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
@@ -446,132 +446,132 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-facet</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-grouping</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-highlighter</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-join</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-memory</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-misc</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-queries</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-queryparser</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-sandbox</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-replicator</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-facet</artifactId>
           </exclusion>
           <exclusion>
@@ -617,12 +617,12 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-sandbox</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
@@ -632,16 +632,16 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-spatial</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
@@ -651,39 +651,39 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-suggest</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-test-framework</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
@@ -705,92 +705,92 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-analysis-extras</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-icu</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-morfologik</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-smartcn</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-stempel</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -976,76 +976,76 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-cell</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -1343,76 +1343,76 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-clustering</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -1610,72 +1610,72 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-core</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -1845,76 +1845,76 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-dataimporthandler</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -2092,80 +2092,80 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-dataimporthandler-extras</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-dataimporthandler</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -2471,76 +2471,76 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-langid</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -2846,88 +2846,88 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-map-reduce</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-cell</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-morphlines-cell</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-morphlines-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -3281,84 +3281,84 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-morphlines-cell</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-cell</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-morphlines-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -3692,80 +3692,80 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-morphlines-core</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-cell</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -4079,7 +4079,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-solrj</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -4118,80 +4118,80 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-test-framework</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-test-framework</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -4377,80 +4377,80 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-uima</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-uima</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -4644,76 +4644,76 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+        <groupId>org.apache.lucene</groupId>
         <artifactId>solr-velocity</artifactId>
         <version>${project.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-kuromoji</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-phonetic</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-codecs</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-grouping</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-join</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-misc</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queries</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>uk.co.flax.lucene-solr-intervals</groupId>
+            <groupId>org.apache.lucene</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
