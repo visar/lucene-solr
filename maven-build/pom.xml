@@ -24,7 +24,7 @@
     <version>13</version>
     <relativePath />
   </parent>
-  <groupId>org.apache.lucene</groupId>
+  <groupId>org.apache</groupId>
   <artifactId>lucene-solr-grandparent</artifactId>
   <version>4.8-r1589872</version>
   <packaging>pom</packaging>
@@ -705,7 +705,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-analysis-extras</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -786,11 +786,11 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -976,7 +976,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-cell</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -1041,11 +1041,11 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -1343,7 +1343,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-clustering</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -1408,11 +1408,11 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -1610,7 +1610,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-core</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -1675,7 +1675,7 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -1845,7 +1845,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-dataimporthandler</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -1910,11 +1910,11 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -2092,7 +2092,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-dataimporthandler-extras</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -2157,15 +2157,15 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-dataimporthandler</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -2471,7 +2471,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-langid</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -2536,11 +2536,11 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -2846,7 +2846,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-map-reduce</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -2911,23 +2911,23 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-cell</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-morphlines-cell</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-morphlines-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -3281,7 +3281,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-morphlines-cell</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -3346,19 +3346,19 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-cell</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-morphlines-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -3692,7 +3692,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-morphlines-core</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -3757,15 +3757,15 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-cell</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -4079,7 +4079,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-solrj</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -4118,7 +4118,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-test-framework</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -4187,11 +4187,11 @@
             <artifactId>lucene-test-framework</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -4377,7 +4377,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-uima</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -4446,11 +4446,11 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
@@ -4644,7 +4644,7 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-velocity</artifactId>
         <version>${project.version}</version>
         <exclusions>
@@ -4709,11 +4709,11 @@
             <artifactId>lucene-suggest</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.apache.lucene</groupId>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
           </exclusion>
           <exclusion>
