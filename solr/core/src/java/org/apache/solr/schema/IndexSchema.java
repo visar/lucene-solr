@@ -94,6 +94,7 @@ public class IndexSchema {
   public static final String REQUIRED = "required";
   public static final String SCHEMA = "schema";
   public static final String SIMILARITY = "similarity";
+  public static final String MERGE_SORT_KEY = "mergeSortKey";
   public static final String SLASH = "/";
   public static final String SOLR_QUERY_PARSER = "solrQueryParser";
   public static final String SOURCE = "source";
@@ -266,6 +267,13 @@ public class IndexSchema {
   /** Returns the SimilarityFactory that constructed the Similarity for this index */
   public SimilarityFactory getSimilarityFactory() { return similarityFactory; }
   
+  protected SortFactory mergeSortKeyFactory;
+  protected boolean isExplicitMergeSortKey = false;
+
+
+  /** Returns the SortFactory that constructed the SortingMergePolicy Sort for this index */
+  public SortFactory getMergeSortKeyFactory() { return mergeSortKeyFactory; }
+
   /**
    * Returns the Analyzer used when indexing documents for this index
    *
@@ -563,6 +571,21 @@ public class IndexSchema {
           requiredFields.add(uniqueKeyField);
         }
       }                
+
+      expression = stepsToPath(SCHEMA, MERGE_SORT_KEY); //   /schema/mergeSortKey
+      node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+      if (null == node) {
+        log.info("no {} specified in schema.", MERGE_SORT_KEY);
+      } else {
+        mergeSortKeyFactory = readMergeSortKey(loader, node, requiredFields);
+        if (null == mergeSortKeyFactory ||
+            null == mergeSortKeyFactory.getSort()) {
+          String msg = "Couldn't configure " + MERGE_SORT_KEY + " from node " + node;
+          log.error(msg);
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+        }
+        isExplicitMergeSortKey = true;
+      }
 
       /////////////// parse out copyField commands ///////////////
       // Map<String,ArrayList<SchemaField>> cfields = new HashMap<String,ArrayList<SchemaField>>();
@@ -943,6 +966,24 @@ public class IndexSchema {
       }
       return similarityFactory;
     }
+  }
+
+
+  static SortFactory readMergeSortKey(SolrResourceLoader loader, Node node, Collection<SchemaField> requiredFields) {
+    SortFactory sortFactory = null;
+    final String classArg = ((Element) node).getAttribute(SortFactory.CLASS_NAME);
+    final Object obj = loader.newInstance(classArg, Object.class, "search.");
+    if (obj instanceof SortFactory) {
+      // configure a factory, get a sort back
+      final NamedList<Object> namedList = DOMUtil.childNodesToNamedList(node);
+      namedList.add(SortFactory.CLASS_NAME, classArg);
+      SolrParams params = SolrParams.toSolrParams(namedList);
+      sortFactory = (SortFactory)obj;
+      sortFactory.init(params, requiredFields);
+    } else {
+      log.warn("Configured class {} is not an instance of SortFactory, ignoring.", classArg);
+    }
+    return sortFactory;
   }
 
 
@@ -1331,6 +1372,9 @@ public class IndexSchema {
     }
     if (isExplicitSimilarity) {
       topLevel.add(SIMILARITY, similarityFactory.getNamedPropertyValues());
+    }
+    if (isExplicitMergeSortKey) {
+      topLevel.add(MERGE_SORT_KEY, mergeSortKeyFactory.getNamedPropertyValues());
     }
     List<SimpleOrderedMap<Object>> fieldTypeProperties = new ArrayList<>();
     SortedMap<String,FieldType> sortedFieldTypes = new TreeMap<>(fieldTypes);

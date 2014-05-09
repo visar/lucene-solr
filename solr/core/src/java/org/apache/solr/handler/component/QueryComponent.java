@@ -132,6 +132,10 @@ public class QueryComponent extends SearchComponent
     if (returnFields.wantsScore()) {
       flags |= SolrIndexSearcher.GET_SCORES;
     }
+    final boolean segment_terminate_early = params.getBool(CommonParams.SEGMENT_TERMINATE_EARLY, CommonParams.SEGMENT_TERMINATE_EARLY_DEFAULT);
+    if (segment_terminate_early) {
+      flags |= SolrIndexSearcher.SEGMENT_TERMINATE_EARLY;
+    }
     rb.setFieldFlags( flags );
 
     String defType = params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE);
