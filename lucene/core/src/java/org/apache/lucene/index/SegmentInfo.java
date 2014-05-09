@@ -27,6 +27,7 @@ import java.util.regex.Matcher;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
+//import org.apache.lucene.index.sorter.SortingMergePolicy; // TODO: commented out because it doesn't compile, probably due to hierarchy issues
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 
@@ -183,12 +184,13 @@ public final class SegmentInfo {
   /** Used for debugging.  Format may suddenly change.
    *
    *  <p>Current format looks like
-   *  <code>_a(3.1):c45/4</code>, which means the segment's
-   *  name is <code>_a</code>; it was created with Lucene 3.1 (or
+   *  <code>_a(3.1):c45/4:sorter=<long"timestamp">!</code>, which means
+   *  the segment's name is <code>_a</code>; it was created with Lucene 3.1 (or
    *  '?' if it's unknown); it's using compound file
    *  format (would be <code>C</code> if not compound); it
    *  has 45 documents; it has 4 deletions (this part is
-   *  left off when there are no deletions).</p>
+   *  left off when there are no deletions); it is sorted by the timestamp field
+   *  in descending order (this part omitted for unsorted segments).</p>
    */
   public String toString(Directory dir, int delCount) {
     StringBuilder s = new StringBuilder();
@@ -203,6 +205,12 @@ public final class SegmentInfo {
 
     if (delCount != 0) {
       s.append('/').append(delCount);
+    }
+
+    final String sorter_key = "sorter"; // SortingMergePolicy.SORTER_ID_PROP; // TODO: use this once we can import SortingMergePolicy
+    final String sorter_val = diagnostics.get(sorter_key);
+    if (null != sorter_val) {
+      s.append(':'+sorter_key+'=').append(sorter_val.replaceAll(": ", ""));
     }
 
     // TODO: we could append toString of attributes() here?

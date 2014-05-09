@@ -416,9 +416,15 @@ public class Grouping {
 
   /**
    * Invokes search with the specified filter and collector.  
+   * If early terminating within a segment has been requested then wrap the collector in a EarlyTerminatingSortingCollector
    * If a time limit has been specified, wrap the collector in a TimeLimitingCollector
    */
   private void buildAndRunCollectorChain(final Filter luceneFilter, Collector collector, DelegatingCollector postFilter) throws IOException {
+
+    if (cmd.getSegmentTerminateEarly()) {
+      collector = SolrIndexSearcher.buildEarlyTerminatingSortingCollector(collector, cmd, searcher.getSchema(), logger);
+    }
+
     if (cmd.getTimeAllowed() > 0) {
       if (timeLimitingCollector == null) {
         timeLimitingCollector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), cmd.getTimeAllowed());
