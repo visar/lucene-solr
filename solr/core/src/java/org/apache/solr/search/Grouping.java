@@ -359,18 +359,10 @@ public class Grouping {
       }
     }
 
-    if (pf.postFilter != null) {
-      pf.postFilter.setLastDelegate(allCollectors);
-      allCollectors = pf.postFilter;
-    }
-
     if (allCollectors != null) {
-      searchWithTimeLimiter(luceneFilter, allCollectors);
-
-      if(allCollectors instanceof DelegatingCollector) {
-        ((DelegatingCollector) allCollectors).finish();
-      }
+      buildAndRunCollectorChain(luceneFilter, allCollectors, pf.postFilter);
     }
+
 
     if (getGroupedDocSet && allGroupHeadsCollector != null) {
       qr.setDocSet(new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(maxDoc)));
@@ -395,18 +387,10 @@ public class Grouping {
             signalCacheWarning = true;
             logger.warn(String.format(Locale.ROOT, "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
             logger.warn("Please increase cache size or disable group caching.");
-            searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
+            buildAndRunCollectorChain(luceneFilter, secondPhaseCollectors, null);
           }
         } else {
-          if (pf.postFilter != null) {
-            pf.postFilter.setLastDelegate(secondPhaseCollectors);
-            secondPhaseCollectors = pf.postFilter;
-          }
-          searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
-
-          if(secondPhaseCollectors instanceof DelegatingCollector) {
-            ((DelegatingCollector) secondPhaseCollectors).finish();
-          }
+          buildAndRunCollectorChain(luceneFilter, secondPhaseCollectors, pf.postFilter);
         }
       }
     }
@@ -432,7 +416,7 @@ public class Grouping {
    * Invokes search with the specified filter and collector.  
    * If a time limit has been specified, wrap the collector in a TimeLimitingCollector
    */
-  private void searchWithTimeLimiter(final Filter luceneFilter, Collector collector) throws IOException {
+  private void buildAndRunCollectorChain(final Filter luceneFilter, Collector collector, DelegatingCollector postFilter) throws IOException {
     if (cmd.getTimeAllowed() > 0) {
       if (timeLimitingCollector == null) {
         timeLimitingCollector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), cmd.getTimeAllowed());
@@ -447,12 +431,23 @@ public class Grouping {
       }
       collector = timeLimitingCollector;
     }
+
+    if (postFilter != null) {
+      postFilter.setLastDelegate(collector);
+      collector = postFilter;
+    }
+
     try {
       searcher.search(query, luceneFilter, collector);
     } catch (TimeLimitingCollector.TimeExceededException x) {
       logger.warn( "Query: " + query + "; " + x.getMessage() );
       qr.setPartialResults(true);
     }
+
+    if(collector instanceof DelegatingCollector) {
+      ((DelegatingCollector) collector).finish();
+    }
+
   }
 
   /**
