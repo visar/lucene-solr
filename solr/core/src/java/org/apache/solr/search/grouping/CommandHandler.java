@@ -198,11 +198,17 @@ public class CommandHandler {
 
   /**
    * Invokes search with the specified filter and collector.  
+   * If early terminating within a segment has been requested then wrap the collector in a EarlyTerminatingSortingCollector
    * If a time limit has been specified then wrap the collector in the TimeLimitingCollector
    */
   private void searchWithTimeLimiter(final Query query, 
                                      final ProcessedFilter filter, 
                                      Collector collector) throws IOException {
+
+    if (queryCommand.getSegmentTerminateEarly()) {
+      collector = SolrIndexSearcher.buildEarlyTerminatingSortingCollector(collector, queryCommand, searcher.getSchema(), logger);
+    }
+
     if (queryCommand.getTimeAllowed() > 0 ) {
       collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), queryCommand.getTimeAllowed());
     }
