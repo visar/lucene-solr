@@ -308,6 +308,7 @@ public class QueryComponent extends SearchComponent
 
     SolrIndexSearcher.QueryCommand cmd = rb.getQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
+    cmd.setTimeLuceneSearch(rb.isDebugTimings());
     SolrIndexSearcher.QueryResult result = new SolrIndexSearcher.QueryResult();
 
     //
