@@ -183,7 +183,7 @@ public class DebugComponent extends SearchComponent
       @SuppressWarnings("unchecked")
       NamedList<Object> stageList = (NamedList<Object>) ((NamedList<Object>)rb.getDebugInfo().get("track")).get(stages.get(rb.stage));
       if(stageList == null) {
-        stageList = new NamedList<>();
+        stageList = new SimpleOrderedMap<>();
         rb.addDebug(stageList, "track", stages.get(rb.stage));
       }
       for(ShardResponse response: sreq.responses) {
@@ -256,7 +256,7 @@ public class DebugComponent extends SearchComponent
 
 
   private NamedList<String> getTrackResponse(ShardResponse shardResponse) {
-    NamedList<String> namedList = new NamedList<>();
+    NamedList<String> namedList = new SimpleOrderedMap<>();
     NamedList<Object> responseNL = shardResponse.getSolrResponse().getResponse();
     @SuppressWarnings("unchecked")
     NamedList<Object> responseHeader = (NamedList<Object>)responseNL.get("responseHeader");
