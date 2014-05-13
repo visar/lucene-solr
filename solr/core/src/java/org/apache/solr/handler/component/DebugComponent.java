@@ -181,13 +181,13 @@ public class DebugComponent extends SearchComponent
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if (rb.isDebugTrack() && rb.isDistrib && !rb.finished.isEmpty()) {
       @SuppressWarnings("unchecked")
-      NamedList<Object> stageList = (NamedList<Object>) ((NamedList<Object>)rb.getDebugInfo().get("track")).get(stages.get(rb.stage));
+      List<Object> stageList = (List<Object>) ((NamedList<Object>)rb.getDebugInfo().get("track")).get(stages.get(rb.stage));
       if(stageList == null) {
-        stageList = new SimpleOrderedMap<>();
+        stageList = new ArrayList<>(sreq.responses.size());
         rb.addDebug(stageList, "track", stages.get(rb.stage));
       }
       for(ShardResponse response: sreq.responses) {
-        stageList.add(response.getShard(), getTrackResponse(response));
+        stageList.add(getTrackResponse(response));
       }
     }
   }
@@ -260,23 +260,24 @@ public class DebugComponent extends SearchComponent
   }
 
 
-  private NamedList<String> getTrackResponse(ShardResponse shardResponse) {
-    NamedList<String> namedList = new SimpleOrderedMap<>();
+  private NamedList<Object> getTrackResponse(ShardResponse shardResponse) {
+    NamedList<Object> namedList = new SimpleOrderedMap<>();
     if (shardResponse.getException() != null) {
       namedList.add("Exception", shardResponse.getException().getMessage());
       return namedList;
     }
+    namedList.add("shardAddress", shardResponse.getShardAddress());
     NamedList<Object> responseNL = shardResponse.getSolrResponse().getResponse();
     @SuppressWarnings("unchecked")
     NamedList<Object> responseHeader = (NamedList<Object>)responseNL.get("responseHeader");
     if(responseHeader != null) {
-      namedList.add("QTime", responseHeader.get("QTime").toString());
+      namedList.add("QTime", responseHeader.get("QTime"));
     }
-    namedList.add("ElapsedTime", String.valueOf(shardResponse.getSolrResponse().getElapsedTime()));
+    namedList.add("ElapsedTime", shardResponse.getSolrResponse().getElapsedTime());
     namedList.add("RequestPurpose", shardResponse.getShardRequest().params.get(CommonParams.REQUEST_PURPOSE));
     SolrDocumentList docList = (SolrDocumentList)shardResponse.getSolrResponse().getResponse().get("response");
     if(docList != null) {
-      namedList.add("NumFound", String.valueOf(docList.getNumFound()));
+      namedList.add("NumFound", docList.getNumFound());
     }
     namedList.add("Response", String.valueOf(responseNL));
     return namedList;
