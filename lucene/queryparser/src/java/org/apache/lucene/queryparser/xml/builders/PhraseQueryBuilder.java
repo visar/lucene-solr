@@ -15,6 +15,7 @@ import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 import org.w3c.dom.Element;
 
@@ -51,49 +52,44 @@ public class PhraseQueryBuilder implements QueryBuilder {
 
         PhraseQuery pq = new PhraseQuery();
 
+        TokenStream source = null;
         try {
-            TokenStream source = analyzer.tokenStream(field, phrase);
+            source = analyzer.tokenStream(field, phrase);
             source.reset();
 
-            CachingTokenFilter buffer = new CachingTokenFilter(source);
-            buffer.reset();// rewind the buffer stream
-
             TermToBytesRefAttribute termAtt = null;
-            PositionIncrementAttribute posIncrAtt = null;
-
-            if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
-                termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
+            BytesRef bytes = null;
+            if (source.hasAttribute(TermToBytesRefAttribute.class)) {
+                termAtt = source.getAttribute(TermToBytesRefAttribute.class);
+                bytes = termAtt.getBytesRef();
             }
-
-            if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-                posIncrAtt = buffer
-                        .getAttribute(PositionIncrementAttribute.class);
-            }
-
-            BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();
-
-            int position = -1;
+            else throw new ParserException("Cannot build phrase query, "
+                + "token stream has no TermToBytesRefAttribute. field:" + field
+                + ", phrase:" + phrase);
 
             int positionIncrement = 1;
-            if (posIncrAtt != null) {
+            if (source.hasAttribute(PositionIncrementAttribute.class)) {
+                PositionIncrementAttribute posIncrAtt = source.getAttribute(PositionIncrementAttribute.class);
                 positionIncrement = posIncrAtt.getPositionIncrement();
                 if (positionIncrement <= 0) positionIncrement = 1;
             }
 
-            while (buffer.incrementToken()) {
+            int position = -1;
+            while (source.incrementToken()) {
                 position += positionIncrement;
                 termAtt.fillBytesRef();
                 pq.add(new Term(field, BytesRef.deepCopyOf(bytes)), position);
             }
 
-            buffer.reset();
-            source.close();// close original stream
+            source.end();
         } catch (IOException ioe) {
             ParserException p = new ParserException(
                     "Cannot build phrase query from xml input. field:" + field
                             + ", phrase:" + phrase);
             p.initCause(ioe);
             throw p;
+        } finally {
+            IOUtils.closeWhileHandlingException(source);
         }
         pq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
         // TODO pq.setSlop(phraseSlop);

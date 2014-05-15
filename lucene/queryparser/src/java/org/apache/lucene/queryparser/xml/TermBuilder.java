@@ -7,6 +7,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -47,8 +48,9 @@ public class TermBuilder {
     if (null == analyzer) {
       tp.process(new Term(field, value));
     } else {
+      TokenStream ts = null;
       try {
-        TokenStream ts = analyzer.tokenStream(field, value);
+        ts = analyzer.tokenStream(field, value);
         TermToBytesRefAttribute termsRefAtt = ts
             .addAttribute(TermToBytesRefAttribute.class);
         BytesRef bytes = termsRefAtt.getBytesRef();
@@ -59,9 +61,10 @@ public class TermBuilder {
           tp.process(new Term(field, BytesRef.deepCopyOf(bytes)));
         }
         ts.end();
-        ts.close();
       } catch (IOException ioe) {
         throw new ParserException("IOException parsing value:" + value);
+      } finally {
+        IOUtils.closeWhileHandlingException(ts);
       }
     }
   }
