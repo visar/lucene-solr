@@ -1603,7 +1603,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
-      buildAndRunCollectorChain(qr, query, luceneFilter, topCollector, cmd, pf.postFilter);
+      Collector collector = topCollector;
+      buildAndRunCollectorChain(qr, query, luceneFilter, collector, cmd, pf.postFilter);
 
       totalHits = topCollector.getTotalHits();
       TopDocs topDocs = topCollector.topDocs(0, len);
@@ -1694,7 +1695,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
       final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
       DocSetCollector setCollector = new DocSetDelegateCollector(maxDoc>>6, maxDoc, topCollector);
-      buildAndRunCollectorChain(qr, query, luceneFilter, setCollector, cmd, pf.postFilter);
+      Collector collector = setCollector;
+      buildAndRunCollectorChain(qr, query, luceneFilter, collector, cmd, pf.postFilter);
 
       set = setCollector.getDocSet();      
 
