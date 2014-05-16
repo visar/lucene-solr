@@ -17,11 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
+import org.apache.lucene.search.intervals.BlockIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
+import org.apache.lucene.search.intervals.TermIntervalIterator;
+import org.apache.lucene.search.similarities.Similarity;
+
 import java.io.IOException;
 import java.util.Arrays;
-
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.similarities.Similarity;
 
 final class ExactPhraseScorer extends Scorer {
   private final int endMinus1;
@@ -36,6 +40,7 @@ final class ExactPhraseScorer extends Scorer {
   private final long cost;
 
   private final static class ChunkState {
+    final TermDocsEnumFactory factory;
     final DocsAndPositionsEnum posEnum;
     final int offset;
     final boolean useAdvance;
@@ -44,7 +49,9 @@ final class ExactPhraseScorer extends Scorer {
     int pos;
     int lastPos;
 
-    public ChunkState(DocsAndPositionsEnum posEnum, int offset, boolean useAdvance) {
+    public ChunkState(TermDocsEnumFactory factory, DocsAndPositionsEnum posEnum, int offset,
+        boolean useAdvance) throws IOException {
+      this.factory = factory;
       this.posEnum = posEnum;
       this.offset = offset;
       this.useAdvance = useAdvance;
@@ -57,11 +64,13 @@ final class ExactPhraseScorer extends Scorer {
   private int freq;
 
   private final Similarity.SimScorer docScorer;
-  
+  private final String field;
+
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-                    Similarity.SimScorer docScorer) throws IOException {
+                    Similarity.SimScorer docScorer, String field) throws IOException {
     super(weight);
     this.docScorer = docScorer;
+    this.field = field;
 
     chunkStates = new ChunkState[postings.length];
 
@@ -71,16 +80,17 @@ final class ExactPhraseScorer extends Scorer {
     cost = postings[0].postings.cost();
 
     for(int i=0;i<postings.length;i++) {
-
       // Coarse optimization: advance(target) is fairly
       // costly, so, if the relative freq of the 2nd
       // rarest term is not that much (> 1/5th) rarer than
       // the first term, then we just use .nextDoc() when
-      // ANDing.  This buys ~15% gain for phrases where
+      // ANDing. This buys ~15% gain for phrases where
       // freq of rarest 2 terms is close:
-      final boolean useAdvance = postings[i].docFreq > 5*postings[0].docFreq;
-      chunkStates[i] = new ChunkState(postings[i].postings, -postings[i].position, useAdvance);
-      if (i > 0 && postings[i].postings.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
+      final boolean useAdvance = postings[i].docFreq > 5 * postings[0].docFreq;
+      chunkStates[i] = new ChunkState(postings[i].factory, postings[i].postings,
+          -postings[i].position, useAdvance);
+      if (i > 0
+          && postings[i].postings.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
         noDocs = true;
         return;
       }
@@ -89,7 +99,7 @@ final class ExactPhraseScorer extends Scorer {
 
   @Override
   public int nextDoc() throws IOException {
-    while(true) {
+    while (true) {
 
       // first (rarest) term
       final int doc = chunkStates[0].posEnum.nextDoc();
@@ -100,7 +110,7 @@ final class ExactPhraseScorer extends Scorer {
 
       // not-first terms
       int i = 1;
-      while(i < chunkStates.length) {
+      while (i < chunkStates.length) {
         final ChunkState cs = chunkStates[i];
         int doc2 = cs.posEnum.docID();
         if (cs.useAdvance) {
@@ -109,7 +119,7 @@ final class ExactPhraseScorer extends Scorer {
           }
         } else {
           int iter = 0;
-          while(doc2 < doc) {
+          while (doc2 < doc) {
             // safety net -- fallback to .advance if we've
             // done too many .nextDocs
             if (++iter == 50) {
@@ -149,11 +159,11 @@ final class ExactPhraseScorer extends Scorer {
       return doc;
     }
 
-    while(true) {
+    while (true) {
       
       // not-first terms
       int i = 1;
-      while(i < chunkStates.length) {
+      while (i < chunkStates.length) {
         int doc2 = chunkStates[i].posEnum.docID();
         if (doc2 < doc) {
           doc2 = chunkStates[i].posEnum.advance(doc);
@@ -207,7 +217,7 @@ final class ExactPhraseScorer extends Scorer {
     freq = 0;
 
     // init chunks
-    for(int i=0;i<chunkStates.length;i++) {
+    for (int i = 0; i < chunkStates.length; i++) {
       final ChunkState cs = chunkStates[i];
       cs.posLimit = cs.posEnum.freq();
       cs.pos = cs.offset + cs.posEnum.nextPosition();
@@ -224,7 +234,7 @@ final class ExactPhraseScorer extends Scorer {
     // TODO: we could fold in chunkStart into offset and
     // save one subtract per pos incr
 
-    while(!end) {
+    while (!end) {
 
       gen++;
 
@@ -237,7 +247,7 @@ final class ExactPhraseScorer extends Scorer {
       // first term
       {
         final ChunkState cs = chunkStates[0];
-        while(cs.pos < chunkEnd) {
+        while (cs.pos < chunkEnd) {
           if (cs.pos > cs.lastPos) {
             cs.lastPos = cs.pos;
             final int posIndex = cs.pos - chunkStart;
@@ -257,10 +267,10 @@ final class ExactPhraseScorer extends Scorer {
 
       // middle terms
       boolean any = true;
-      for(int t=1;t<endMinus1;t++) {
+      for (int t = 1; t < endMinus1; t++) {
         final ChunkState cs = chunkStates[t];
         any = false;
-        while(cs.pos < chunkEnd) {
+        while (cs.pos < chunkEnd) {
           if (cs.pos > cs.lastPos) {
             cs.lastPos = cs.pos;
             final int posIndex = cs.pos - chunkStart;
@@ -295,11 +305,12 @@ final class ExactPhraseScorer extends Scorer {
 
       {
         final ChunkState cs = chunkStates[endMinus1];
-        while(cs.pos < chunkEnd) {
+        while (cs.pos < chunkEnd) {
           if (cs.pos > cs.lastPos) {
             cs.lastPos = cs.pos;
             final int posIndex = cs.pos - chunkStart;
-            if (posIndex >= 0 && gens[posIndex] == gen && counts[posIndex] == endMinus1) {
+            if (posIndex >= 0 && gens[posIndex] == gen
+                && counts[posIndex] == endMinus1) {
               freq++;
             }
           }
@@ -318,6 +329,17 @@ final class ExactPhraseScorer extends Scorer {
     }
 
     return freq;
+  }
+
+  @Override
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    TermIntervalIterator[] posIters = new TermIntervalIterator[chunkStates.length];
+    DocsAndPositionsEnum[] enums = new DocsAndPositionsEnum[chunkStates.length];
+    for (int i = 0; i < chunkStates.length; i++) {
+      posIters[i] = new TermIntervalIterator(this, enums[i] = chunkStates[i].factory.docsAndPositionsEnum(),
+                                              false, collectIntervals, field);
+    }
+    return new SloppyPhraseScorer.AdvancingIntervalIterator(this, collectIntervals, enums, new BlockIntervalIterator(this, collectIntervals, posIters));
   }
 
   @Override

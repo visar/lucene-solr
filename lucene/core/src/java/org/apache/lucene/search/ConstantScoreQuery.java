@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -33,13 +34,22 @@ import java.util.Set;
  * query boost for every document that matches the filter or query.
  * For queries it therefore simply strips of all scores and returns a constant one.
  */
-public class ConstantScoreQuery extends Query {
+public class ConstantScoreQuery extends FieldedQuery {
   protected final Filter filter;
   protected final Query query;
+
+  public static ConstantScoreQuery fromFieldedQuery(FieldedQuery query) {
+    return new ConstantScoreQuery(query.getField(), query);
+  }
 
   /** Strips off scores from the passed in Query. The hits will get a constant score
    * dependent on the boost factor of this query. */
   public ConstantScoreQuery(Query query) {
+    this(null, query);
+  }
+
+  public ConstantScoreQuery(String field, Query query) {
+    super(field);
     if (query == null)
       throw new NullPointerException("Query may not be null");
     this.filter = null;
@@ -53,6 +63,7 @@ public class ConstantScoreQuery extends Query {
    * use {@link #ConstantScoreQuery(Query)}!
    */
   public ConstantScoreQuery(Filter filter) {
+    super(null);
     if (filter == null)
       throw new NullPointerException("Filter may not be null");
     this.filter = filter;
@@ -74,7 +85,7 @@ public class ConstantScoreQuery extends Query {
     if (query != null) {
       Query rewritten = query.rewrite(reader);
       if (rewritten != query) {
-        rewritten = new ConstantScoreQuery(rewritten);
+        rewritten = new ConstantScoreQuery(field, rewritten);
         rewritten.setBoost(this.getBoost());
         return rewritten;
       }
@@ -85,7 +96,7 @@ public class ConstantScoreQuery extends Query {
       // QueryWrapperFilter was used to wrap queries.
       if (filter instanceof QueryWrapperFilter) {
         final QueryWrapperFilter qwf = (QueryWrapperFilter) filter;
-        final Query rewritten = new ConstantScoreQuery(qwf.getQuery().rewrite(reader));
+        final Query rewritten = new ConstantScoreQuery(field, qwf.getQuery().rewrite(reader));
         rewritten.setBoost(this.getBoost());
         return rewritten;
       }
@@ -134,14 +145,14 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+    public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, PostingFeatures flags, Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
-        return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+        return super.bulkScorer(context, scoreDocsInOrder, flags, acceptDocs);
       } else {
         assert query != null && innerWeight != null;
-        BulkScorer bulkScorer = innerWeight.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+        BulkScorer bulkScorer = innerWeight.bulkScorer(context, scoreDocsInOrder, flags, acceptDocs);
         if (bulkScorer == null) {
           return null;
         }
@@ -150,7 +161,7 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, PostingFeatures flags, Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
@@ -161,7 +172,7 @@ public class ConstantScoreQuery extends Query {
         disi = dis.iterator();
       } else {
         assert query != null && innerWeight != null;
-        disi = innerWeight.scorer(context, acceptDocs);
+        disi = innerWeight.scorer(context, flags, acceptDocs);
       }
 
       if (disi == null) {
@@ -177,7 +188,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      final Scorer cs = scorer(context, context.reader().getLiveDocs());
+      final Scorer cs = scorer(context, PostingFeatures.DOCS_AND_FREQS, context.reader().getLiveDocs());
       final boolean exists = (cs != null && cs.advance(doc) == doc);
 
       final ComplexExplanation result = new ComplexExplanation();
@@ -281,6 +292,16 @@ public class ConstantScoreQuery extends Query {
     @Override
     public long cost() {
       return docIdSetIterator.cost();
+    }
+
+    @Override
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      if (docIdSetIterator instanceof Scorer) {
+        return ((Scorer) docIdSetIterator).intervals(collectIntervals);
+      } else {
+        return null;
+        //throw new UnsupportedOperationException("positions are only supported on Scorer subclasses");
+      }
     }
 
     @Override

@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.search.Weight.PostingFeatures;
 
 /**
  * <p>Expert: Collectors are primarily meant to be used to
@@ -176,4 +177,12 @@ public abstract class Collector {
    */
   public abstract boolean acceptsDocsOutOfOrder();
   
+  /**
+   * Returns the posting features required by this collector. Default value is
+   * {@link PostingFeatures#DOCS_AND_FREQS}.
+   */
+  public PostingFeatures postingFeatures() {
+    return PostingFeatures.DOCS_AND_FREQS;
+  }
+
 }

@@ -17,6 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.intervals.DisjunctionIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
+
 import java.io.IOException;
 
 /** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
@@ -81,4 +84,10 @@ class DisjunctionSumScorer extends DisjunctionScorer {
   public int freq() throws IOException {
     return nrMatchers;
   }
+
+  @Override
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    return new DisjunctionIntervalIterator(this, collectIntervals, pullIterators(collectIntervals, subScorers));
+  }
+
 }
