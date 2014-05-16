@@ -394,6 +394,7 @@ public class TestJoinUtil extends LuceneTestCase {
     dir.close();
   }
 
+  @BadApple(bugUrl = "https://github.com/bloomberg/matcher/issues/29")
   @Test
   @Slow
   public void testSingleValueRandomJoin() throws Exception {
@@ -402,6 +403,7 @@ public class TestJoinUtil extends LuceneTestCase {
     executeRandomJoin(false, maxIndexIter, maxSearchIter, TestUtil.nextInt(random(), 87, 764));
   }
 
+  @BadApple(bugUrl = "https://github.com/bloomberg/matcher/issues/29")
   @Test
   @Slow
   // This test really takes more time, that is why the number of iterations are smaller.

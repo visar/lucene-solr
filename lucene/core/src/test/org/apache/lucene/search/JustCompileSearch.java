@@ -18,13 +18,16 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.PriorityQueue;
+
+import java.io.IOException;
 
 /**
  * Holds all implementations of classes in the o.a.l.search package as a
@@ -253,7 +256,12 @@ final class JustCompileSearch {
     public int advance(int target) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
+    @Override
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
     @Override
     public long cost() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
@@ -344,7 +352,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) {
+    public Scorer scorer(AtomicReaderContext context, PostingFeatures flags, Bits acceptDocs) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

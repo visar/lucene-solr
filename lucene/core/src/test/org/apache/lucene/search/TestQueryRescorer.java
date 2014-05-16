@@ -17,11 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -30,6 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -39,6 +35,10 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Set;
 
 @SuppressCodecs("Lucene3x")
 public class TestQueryRescorer extends LuceneTestCase {
@@ -445,7 +445,7 @@ public class TestQueryRescorer extends LuceneTestCase {
         }
 
         @Override
-        public Scorer scorer(final AtomicReaderContext context, Bits acceptDocs) throws IOException {
+        public Scorer scorer(final AtomicReaderContext context, PostingFeatures flags, Bits acceptDocs) throws IOException {
 
           return new Scorer(null) {
             int docID = -1;
@@ -478,6 +478,11 @@ public class TestQueryRescorer extends LuceneTestCase {
             public int advance(int target) {
               docID = target;
               return docID;
+            }
+
+            @Override
+            public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+              throw new UnsupportedOperationException();
             }
 
             @Override

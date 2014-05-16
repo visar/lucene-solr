@@ -18,6 +18,7 @@ package org.apache.lucene.queries.function;
  */
 
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -97,8 +98,8 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-      Scorer subQueryScorer = qWeight.scorer(context, acceptDocs);
+    public Scorer scorer(AtomicReaderContext context, PostingFeatures flags, Bits acceptDocs) throws IOException {
+      Scorer subQueryScorer = qWeight.scorer(context, flags, acceptDocs);
       if (subQueryScorer == null) {
         return null;
       }
@@ -188,6 +189,10 @@ public class BoostedQuery extends Query {
     }
 
     @Override
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      return scorer.intervals(collectIntervals);
+    }
+
     public long cost() {
       return scorer.cost();
     }

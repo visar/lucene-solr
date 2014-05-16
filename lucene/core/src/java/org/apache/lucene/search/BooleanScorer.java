@@ -17,14 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+
+import java.io.IOException;
+import java.util.List;
 
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
@@ -108,7 +105,7 @@ final class BooleanScorer extends BulkScorer {
     }
 
   }
-  
+
   static final class Bucket {
     int doc = -1;            // tells if bucket is valid
     double score;             // incremental score
@@ -267,7 +264,6 @@ final class BooleanScorer extends BulkScorer {
     return false;
   }
 
-  @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
     buffer.append("boolean(");

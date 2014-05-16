@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.AttributeSource;
 
 /** 
@@ -63,6 +64,11 @@ abstract class FilterScorer extends Scorer {
   @Override
   public int advance(int target) throws IOException {
     return in.advance(target);
+  }
+
+  @Override
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    return in.intervals(collectIntervals);
   }
 
   @Override

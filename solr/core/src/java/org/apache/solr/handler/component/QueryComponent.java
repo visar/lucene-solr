@@ -47,6 +47,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -1311,6 +1312,11 @@ public class QueryComponent extends SearchComponent
 
     @Override
     public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       throw new UnsupportedOperationException();
     }
 

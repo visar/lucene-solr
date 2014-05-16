@@ -194,8 +194,9 @@ public class ReRankQParserPlugin extends QParserPlugin {
       return mainWeight.getValueForNormalization();
     }
 
-    public Scorer scorer(AtomicReaderContext context, Bits bits) throws IOException {
-      return mainWeight.scorer(context, bits);
+    @Override
+    public Scorer scorer(AtomicReaderContext context, PostingFeatures flags, Bits bits) throws IOException {
+      return mainWeight.scorer(context, flags, bits);
     }
 
     public Query getQuery() {

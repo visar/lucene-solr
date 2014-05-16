@@ -17,12 +17,6 @@ package org.apache.lucene.expressions;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.ValueSource;
@@ -33,6 +27,13 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortRescorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.intervals.IntervalIterator;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A {@link Rescorer} that uses an expression to re-score
@@ -86,7 +87,12 @@ class ExpressionRescorer extends SortRescorer {
     public int nextDoc() {
       throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
     }
-    
+
+    @Override
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
     @Override
     public float score() {
       return score;

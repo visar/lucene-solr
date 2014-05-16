@@ -17,28 +17,28 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Random;
-
 import junit.framework.Assert;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.AllDeletedFilterReader;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Random;
 
 import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
@@ -273,7 +273,7 @@ public class QueryUtils {
               if (scorer == null) {
                 Weight w = s.createNormalizedWeight(q);
                 AtomicReaderContext context = readerContextArray.get(leafPtr);
-                scorer = w.scorer(context, context.reader().getLiveDocs());
+                scorer = w.scorer(context, PostingFeatures.DOCS_AND_FREQS, context.reader().getLiveDocs());
               }
               
               int op = order[(opidx[0]++) % order.length];
@@ -320,7 +320,7 @@ public class QueryUtils {
               indexSearcher.setSimilarity(s.getSimilarity());
               Weight w = indexSearcher.createNormalizedWeight(q);
               AtomicReaderContext ctx = (AtomicReaderContext)indexSearcher.getTopReaderContext();
-              Scorer scorer = w.scorer(ctx, ctx.reader().getLiveDocs());
+              Scorer scorer = w.scorer(ctx, PostingFeatures.DOCS_AND_FREQS, ctx.reader().getLiveDocs());
               if (scorer != null) {
                 boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
                 Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
@@ -347,7 +347,7 @@ public class QueryUtils {
           indexSearcher.setSimilarity(s.getSimilarity());
           Weight w = indexSearcher.createNormalizedWeight(q);
           AtomicReaderContext ctx = previousReader.getContext();
-          Scorer scorer = w.scorer(ctx, ctx.reader().getLiveDocs());
+          Scorer scorer = w.scorer(ctx, PostingFeatures.DOCS_AND_FREQS, ctx.reader().getLiveDocs());
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
@@ -378,7 +378,7 @@ public class QueryUtils {
           long startMS = System.currentTimeMillis();
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = s.createNormalizedWeight(q);
-            Scorer scorer = w.scorer(context.get(leafPtr), liveDocs);
+            Scorer scorer = w.scorer(context.get(leafPtr), PostingFeatures.DOCS_AND_FREQS, liveDocs);
             Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
             float skipToScore = scorer.score();
@@ -406,7 +406,7 @@ public class QueryUtils {
           IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
           indexSearcher.setSimilarity(s.getSimilarity());
           Weight w = indexSearcher.createNormalizedWeight(q);
-          Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), previousReader.getLiveDocs());
+          Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), PostingFeatures.DOCS_AND_FREQS, previousReader.getLiveDocs());
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
@@ -431,7 +431,7 @@ public class QueryUtils {
       IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
       indexSearcher.setSimilarity(s.getSimilarity());
       Weight w = indexSearcher.createNormalizedWeight(q);
-      Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), previousReader.getLiveDocs());
+      Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), PostingFeatures.DOCS_AND_FREQS, previousReader.getLiveDocs());
       if (scorer != null) {
         boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
         Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);

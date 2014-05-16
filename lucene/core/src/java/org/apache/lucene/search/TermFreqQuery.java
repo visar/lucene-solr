@@ -67,13 +67,17 @@ public class TermFreqQuery extends Query {
       public void normalize(float norm, float topLevelBoost) {
         weight.normalize(norm, topLevelBoost);
       }
-      public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-        Scorer ws = weight.scorer(context, acceptDocs);
-        if (null == ws) return null;
-        return new TermFreqScorer(ws, termFreqRange);
-      }
       public boolean scoresDocsOutOfOrder() {
         return weight.scoresDocsOutOfOrder();
+      }
+
+      @Override
+      public Scorer scorer(AtomicReaderContext context, PostingFeatures flags, Bits acceptDocs) throws IOException {
+        Scorer ws = weight.scorer(context, flags, acceptDocs);
+        if (null == ws) {
+          return null;
+        }
+        return new TermFreqScorer(ws, termFreqRange);
       }
     };
   }

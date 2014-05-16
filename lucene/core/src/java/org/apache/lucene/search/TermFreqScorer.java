@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import org.apache.lucene.search.intervals.IntervalIterator;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>
  * <code>IntegerRange.min</code> to <code>IntegerRange.max</code> times.
@@ -64,4 +65,9 @@ class TermFreqScorer extends Scorer {
   /** Returns a string representation of this <code>TermFreqScorer</code>. */
   @Override
   public String toString() { return scorer+"@TF="+termFreqRange; }
+
+  @Override
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
 }

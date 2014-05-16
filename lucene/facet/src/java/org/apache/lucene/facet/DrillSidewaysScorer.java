@@ -17,19 +17,20 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 class DrillSidewaysScorer extends BulkScorer {
 
@@ -626,7 +627,7 @@ class DrillSidewaysScorer extends BulkScorer {
     public FakeScorer() {
       super(null);
     }
-    
+
     @Override
     public int advance(int target) {
       throw new UnsupportedOperationException("FakeScorer doesn't support advance(int)");
@@ -646,7 +647,12 @@ class DrillSidewaysScorer extends BulkScorer {
     public int nextDoc() {
       throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
     }
-    
+
+    @Override
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      throw new UnsupportedOperationException("FakeScorer doesn't support intervals()");
+    }
+
     @Override
     public float score() {
       return collectScore;

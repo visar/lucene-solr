@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.search.TermAutomatonQuery.EnumAndScorer;
 import org.apache.lucene.search.TermAutomatonQuery.TermAutomatonWeight;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -335,6 +336,11 @@ class TermAutomatonScorer extends Scorer {
   public float score() {
     // TODO: we could probably do better here, e.g. look @ freqs of actual terms involved in this doc and score differently
     return docScorer.score(docID, freq);
+  }
+
+  @Override
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   @Override

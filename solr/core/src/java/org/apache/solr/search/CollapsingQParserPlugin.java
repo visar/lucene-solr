@@ -31,6 +31,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
@@ -346,6 +347,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     public float score() {
       return score;
+    }
+
+    @Override
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     public int freq() {
