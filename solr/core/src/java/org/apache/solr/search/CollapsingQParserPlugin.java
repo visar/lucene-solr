@@ -17,14 +17,9 @@
 
 package org.apache.solr.search;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.carrotsearch.hppc.FloatArrayList;
+import com.carrotsearch.hppc.IntOpenHashSet;
+import com.carrotsearch.hppc.cursors.IntCursor;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
@@ -39,6 +34,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -57,9 +53,13 @@ import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 
-import com.carrotsearch.hppc.FloatArrayList;
-import com.carrotsearch.hppc.IntOpenHashSet;
-import com.carrotsearch.hppc.cursors.IntCursor;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
 
@@ -401,6 +401,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     public DummyScorer() {
       super(null);
+    }
+
+    @Override
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     public float score() {

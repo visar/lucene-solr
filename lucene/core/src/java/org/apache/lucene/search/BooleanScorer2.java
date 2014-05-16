@@ -17,14 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.search.intervals.IntervalIterator;
+import org.apache.lucene.search.similarities.Similarity;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery.BooleanWeight;
-import org.apache.lucene.search.similarities.Similarity;
 
 /* See the description in BooleanScorer.java, comparing
  * BooleanScorer & BooleanScorer2 */
@@ -146,6 +146,11 @@ class BooleanScorer2 extends Scorer {
     @Override
     public int advance(int target) throws IOException {
       return scorer.advance(target);
+    }
+
+    @Override
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      return scorer.intervals(collectIntervals);
     }
 
     @Override
@@ -279,6 +284,7 @@ class BooleanScorer2 extends Scorer {
                                 : new MinShouldMatchSumScorer(weight, prohibitedScorers)));
   }
 
+
   @Override
   public int docID() {
     return doc;
@@ -307,6 +313,10 @@ class BooleanScorer2 extends Scorer {
   }
   
   @Override
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    return countingSumScorer.intervals(collectIntervals);
+  }
+
   public long cost() {
     return countingSumScorer.cost();
   }

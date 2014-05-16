@@ -19,9 +19,12 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader; // javadocs
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReaderContext; // javadocs
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
@@ -35,7 +38,8 @@ import org.apache.lucene.util.Bits;
  * {@link AtomicReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext, Bits)})
+ * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext,
+ * PostingFeatures, Bits)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
@@ -50,7 +54,7 @@ import org.apache.lucene.util.Bits;
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(AtomicReaderContext, Bits)}.
+ * {@link #scorer(AtomicReaderContext, PostingFeatures, Bits)}.
  * </ol>
  * 
  * @since 2.9
@@ -90,6 +94,7 @@ public abstract class Weight {
    * 
    * @param context
    *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
+   * @param flags the low level {@link PostingFeatures} for this scorer.
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
@@ -97,7 +102,7 @@ public abstract class Weight {
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException;
+  public abstract Scorer scorer(AtomicReaderContext context, PostingFeatures flags, Bits acceptDocs) throws IOException;
 
   /**
    * Optional method, to return a {@link BulkScorer} to
@@ -116,19 +121,15 @@ public abstract class Weight {
    *          in-order scorer is also an out-of-order one. However, an
    *          out-of-order scorer may not support {@link Scorer#nextDoc()}
    *          and/or {@link Scorer#advance(int)}, therefore it is recommended to
-   *          request an in-order scorer if use of these
-   *          methods is required.
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
-   *
-   * @return a {@link BulkScorer} which scores documents and
-   * passes them to a collector.
+   * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException if there is a low-level I/O error
    */
-  public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+  public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, PostingFeatures flags, Bits acceptDocs) throws IOException {
 
-    Scorer scorer = scorer(context, acceptDocs);
+    Scorer scorer = scorer(context, flags, acceptDocs);
     if (scorer == null) {
       // No docs match
       return null;
@@ -198,7 +199,60 @@ public abstract class Weight {
    * <b>NOTE:</b> the default implementation returns <code>false</code>, i.e.
    * the <code>Scorer</code> scores documents in-order.
    */
-  public boolean scoresDocsOutOfOrder() {
-    return false;
+  public boolean scoresDocsOutOfOrder() { return false; }
+
+  Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, Bits acceptDocs) {
+    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+  }
+
+  /**
+   * Feature flags used to control low-level posting list features. These flags
+   * all Collectors and scorers to specify their requirements for document
+   * collection and scoring ahead of time for best performance.
+   */
+  public static enum PostingFeatures {
+    /**Only document IDs are required for document collection and scoring*/
+    DOCS_ONLY(0, 0),
+    /**Document IDs and Term Frequencies are required for document collection and scoring*/
+    DOCS_AND_FREQS(DocsEnum.FLAG_FREQS, 0),
+    /**Document IDs, Term Frequencies and Positions are required for document collection and scoring*/
+    POSITIONS(DocsEnum.FLAG_FREQS, 0),
+    /**Document IDs, Term Frequencies, Positions and Payloads are required for document collection and scoring*/
+    POSITIONS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_PAYLOADS),
+    /**Document IDs, Term Frequencies, Positions and Offsets are required for document collection and scoring*/
+    OFFSETS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS),
+    /**Document IDs, Term Frequencies, Positions, Offsets and Payloads are required for document collection and scoring*/
+    OFFSETS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS
+            | DocsAndPositionsEnum.FLAG_PAYLOADS);
+
+    private final int docsAndPositionsFlags;
+    private final int docFlags;
+
+    private PostingFeatures(int docFlags, int docsAndPositionsFlags) {
+      this.docsAndPositionsFlags = docsAndPositionsFlags;
+      this.docFlags = docFlags;
+    }
+
+    /**
+     * Returns the flags for {@link DocsAndPositionsEnum}. This value should be
+     * passed to
+     * {@link TermsEnum#docsAndPositions(Bits, DocsAndPositionsEnum, int)}
+     *
+     * @return {@link DocsAndPositionsEnum} flags
+     */
+    public int docsAndPositionsFlags() {
+      return docsAndPositionsFlags;
+    }
+
+    /**
+     * Returns the flags for {@link DocsEnum}. This value should be
+     * passed to
+     * {@link TermsEnum#docs(Bits, DocsEnum, int)}
+     *
+     * @return {@link DocsEnum} flags
+     */
+    public int docFlags() {
+      return docFlags;
+    }
   }
 }

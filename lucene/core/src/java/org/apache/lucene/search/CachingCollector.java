@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
@@ -89,10 +90,14 @@ public abstract class CachingCollector extends Collector {
     
     @Override
     public final int nextDoc() { throw new UnsupportedOperationException(); }
+
+    @Override
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException { throw new UnsupportedOperationException(); }
     
     @Override
     public long cost() { return 1; }
-    }
+
+  }
 
   // A CachingCollector which caches scores
   private static final class ScoreCachingCollector extends CachingCollector {

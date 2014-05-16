@@ -16,13 +16,6 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -30,6 +23,12 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /** A Query that matches documents matching boolean combinations of other
   * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
@@ -241,7 +240,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
         Weight w = wIter.next();
         BooleanClause c = cIter.next();
-        if (w.scorer(context, context.reader().getLiveDocs()) == null) {
+        if (w.scorer(context, PostingFeatures.DOCS_AND_FREQS, context.reader().getLiveDocs()) == null) {
           if (c.isRequired()) {
             fail = true;
             Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
@@ -305,12 +304,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
     @Override
     public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-                                 Bits acceptDocs) throws IOException {
+                                 PostingFeatures flags, Bits acceptDocs) throws IOException {
 
       if (scoreDocsInOrder || minNrShouldMatch > 1) {
         // TODO: (LUCENE-4872) in some cases BooleanScorer may be faster for minNrShouldMatch
         // but the same is even true of pure conjunctions...
-        return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+        return super.bulkScorer(context, scoreDocsInOrder, flags, acceptDocs);
       }
 
       List<BulkScorer> prohibited = new ArrayList<>();
@@ -318,7 +317,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        BulkScorer subScorer = w.bulkScorer(context, false, acceptDocs);
+        BulkScorer subScorer = w.bulkScorer(context, false, flags, acceptDocs);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -327,7 +326,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           // TODO: there are some cases where BooleanScorer
           // would handle conjunctions faster than
           // BooleanScorer2...
-          return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+          return super.bulkScorer(context, scoreDocsInOrder, flags, acceptDocs);
         } else if (c.isProhibited()) {
           prohibited.add(subScorer);
         } else {
@@ -340,7 +339,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs)
+    public Scorer scorer(AtomicReaderContext context, PostingFeatures flags, Bits acceptDocs)
         throws IOException {
       List<Scorer> required = new ArrayList<>();
       List<Scorer> prohibited = new ArrayList<>();
@@ -348,7 +347,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        Scorer subScorer = w.scorer(context, acceptDocs);
+        Scorer subScorer = w.scorer(context, flags, acceptDocs);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -371,7 +370,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         // no documents will be matched by the query
         return null;
       }
-      
+
       // simple conjunction
       if (optional.size() == 0 && prohibited.size() == 0) {
         float coord = disableCoord ? 1.0f : coord(required.size(), maxCoord);
