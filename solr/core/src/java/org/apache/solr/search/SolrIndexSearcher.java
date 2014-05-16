@@ -222,14 +222,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     
     try {
       super.search(query, luceneFilter, collector);
-      if(collector instanceof DelegatingCollector) {
-        ((DelegatingCollector)collector).finish();
-      }
     }
     catch( TimeLimitingCollector.TimeExceededException x ) {
       log.warn( "Query: " + query + "; " + x.getMessage() );
       qr.setPartialResults(true);
     }        
+    catch (EarlyTerminatingCollectorException etce) {
+      if(collector instanceof DelegatingCollector) {
+        ((DelegatingCollector)collector).finish();
+      }
+      throw etce;
+    }
+
+    if(collector instanceof DelegatingCollector) {
+      ((DelegatingCollector)collector).finish();
+    }
   }
   
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
