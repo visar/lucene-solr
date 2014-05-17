@@ -67,7 +67,7 @@ import static org.hamcrest.core.Is.is;
 /**
  * TODO: FIX THIS TEST Phrase and Span Queries positions callback API
  */
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
+@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene3x"})
 public class IntervalHighlighterTest extends LuceneTestCase {
 
   protected final static String F = "f";
