@@ -192,7 +192,7 @@ public abstract class Weight {
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
    * {@link Collector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
-   * {@link #bulkScorer(AtomicReaderContext, boolean, Bits)} to
+   * {@link #bulkScorer(AtomicReaderContext, boolean, PostingFeatures, Bits)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.
    * <p>
