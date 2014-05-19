@@ -23,6 +23,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import java.lang.System;
 import java.lang.Thread;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /** A recursive timer.
  * 
@@ -56,7 +57,7 @@ public class RTimer {
    *
    * May override to implement a different timer (CPU time, etc).
    */
-  protected double now() { return System.currentTimeMillis(); }
+  protected double now() { return TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS); }
 
   /** Recursively stop timer and sub timers */
   public double stop() {
