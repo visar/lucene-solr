@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.lucene.index.IndexableField;
@@ -110,6 +111,7 @@ public class Grouping {
   private float maxScore = Float.NEGATIVE_INFINITY;  // max score seen in any doclist
   private boolean signalCacheWarning = false;
   private TimeLimitingCollector timeLimitingCollector;
+  private Long startTime = null;
 
 
   public DocList mainResult;  // output if one of the grouping commands should be used as the main result.
@@ -437,6 +439,10 @@ public class Grouping {
       collector = postFilter;
     }
 
+    if (cmd.getTimeLuceneSearch() && null == startTime) {
+      startTime = System.nanoTime();
+    }
+
     try {
       searcher.search(query, luceneFilter, collector);
     } catch (TimeLimitingCollector.TimeExceededException x) {
@@ -448,6 +454,9 @@ public class Grouping {
       ((DelegatingCollector) collector).finish();
     }
 
+    if (cmd.getTimeLuceneSearch()) {
+      qr.setLuceneSearchTime( (double)TimeUnit.MILLISECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS) );
+    }
   }
 
   /**
