@@ -20,6 +20,7 @@ package org.apache.solr.search.grouping;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Filter;
@@ -116,6 +117,7 @@ public class CommandHandler {
   private final boolean truncateGroups;
   private final boolean includeHitCount;
   private boolean partialResults = false;
+  private Double luceneSearchTime = null;
   private int totalHitCount;
 
   private DocSet docSet;
@@ -190,6 +192,7 @@ public class CommandHandler {
       queryResult.setDocSet(docSet);
     }
     queryResult.setPartialResults(partialResults);
+    queryResult.setLuceneSearchTime(luceneSearchTime);
     return transformer.transform(commands);
   }
 
@@ -210,16 +213,21 @@ public class CommandHandler {
     }
 
     Filter luceneFilter = filter.filter;
+
     if (filter.postFilter != null) {
       filter.postFilter.setLastDelegate(collector);
       collector = filter.postFilter;
     }
 
+    final long startTime = System.nanoTime();
     try {
       searcher.search(query, luceneFilter, collector);
     } catch (TimeLimitingCollector.TimeExceededException x) {
       partialResults = true;
       logger.warn( "Query: " + query + "; " + x.getMessage() );
+    }
+    if (queryCommand.getTimeLuceneSearch()) {
+      luceneSearchTime = ( (double)TimeUnit.MILLISECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS) );
     }
 
     if (includeHitCount) {

@@ -44,11 +44,13 @@ public class RTimer {
   protected double time;
   protected double culmTime;
   protected SimpleOrderedMap<RTimer> children;
+  protected SimpleOrderedMap<Double> double_children;
 
   public RTimer() {
     time = 0;
     culmTime = 0;
     children = new SimpleOrderedMap<>();
+    double_children = new SimpleOrderedMap<>();
     startTime = now();
     state = STARTED;
   }
@@ -116,12 +118,21 @@ public class RTimer {
     return asNamedList().toString();
   }
 
+  public void setSubTimer(String desc, Double value) {
+    double_children.add(desc, value);
+  }
+
   public NamedList asNamedList() {
     NamedList<Object> m = new SimpleOrderedMap<>();
     m.add( "time", time );
     if( children.size() > 0 ) {
       for( Map.Entry<String, RTimer> entry : children ) {
         m.add( entry.getKey(), entry.getValue().asNamedList() );
+      }
+    }
+    if( double_children.size() > 0 ) {
+      for( Map.Entry<String, Double> entry : double_children ) {
+        m.add( entry.getKey(), entry.getValue() );
       }
     }
     return m;
