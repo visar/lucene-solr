@@ -443,6 +443,9 @@ public class ResponseBuilder
     if (result.isPartialResults()) {
       rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
     }
+    if (timer != null) {
+      timer.setSubTimer("LuceneSearchTime", result.getLuceneSearchTime());
+    }
     if (null != cursorMark) {
       assert null != result.getNextCursorMark() : "using cursor but no next cursor set";
       this.setNextCursorMark(result.getNextCursorMark());

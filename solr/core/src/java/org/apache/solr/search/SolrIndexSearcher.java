@@ -182,7 +182,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       postFilter.setLastDelegate(collector);
       collector = postFilter;
     }
-    
+
+    final long startTime = System.nanoTime();
+
     try {
       super.search(query, luceneFilter, collector);
       if(collector instanceof DelegatingCollector) {
@@ -192,7 +194,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     catch( TimeLimitingCollector.TimeExceededException x ) {
       log.warn( "Query: " + query + "; " + x.getMessage() );
       qr.setPartialResults(true);
-    }        
+    }
+
+    if (cmd.getTimeLuceneSearch()) {
+      qr.setLuceneSearchTime( (double)TimeUnit.MILLISECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS) );
+    }
+
   }
   
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
@@ -1281,7 +1288,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   public static final int GET_DOCSET            = 0x40000000;
   static final int NO_CHECK_FILTERCACHE  = 0x20000000;
   static final int NO_SET_QCACHE         = 0x10000000;
-  public static final int TERMINATE_EARLY = 0x04;
+  public static final int TIME_LUCENE_SEARCH = 0x08;
+  public static final int TERMINATE_EARLY = 0x04; // permit early termination across segments (and don't continue to search any remaining segments)
   public static final int GET_DOCLIST           =        0x02; // get the documents actually returned in a response
   public static final int GET_SCORES             =       0x01;
 
@@ -2332,6 +2340,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     public QueryCommand setNeedDocSet(boolean needDocSet) {
       return needDocSet ? setFlags(GET_DOCSET) : clearFlags(GET_DOCSET);
     }
+
+    public boolean getTimeLuceneSearch() { return (flags & TIME_LUCENE_SEARCH) == TIME_LUCENE_SEARCH; }
+    public QueryCommand setTimeLuceneSearch(boolean timeLuceneSearch) {
+      return timeLuceneSearch ? setFlags(TIME_LUCENE_SEARCH) : clearFlags(TIME_LUCENE_SEARCH);
+    }
   }
 
 
@@ -2340,6 +2353,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    */
   public static class QueryResult {
     private boolean partialResults;
+    private Double luceneSearchTime = null;
     private DocListAndSet docListAndSet;
     private CursorMark nextCursorMark;
 
@@ -2363,6 +2377,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     public boolean isPartialResults() { return partialResults; }
     public void setPartialResults(boolean partialResults) { this.partialResults = partialResults; }
+
+    public Double getLuceneSearchTime() { return luceneSearchTime; }
+    public void setLuceneSearchTime(Double luceneSearchTime) { this.luceneSearchTime = luceneSearchTime; }
 
     public void setDocListAndSet( DocListAndSet listSet ) { docListAndSet = listSet; }
     public DocListAndSet getDocListAndSet() { return docListAndSet; }
