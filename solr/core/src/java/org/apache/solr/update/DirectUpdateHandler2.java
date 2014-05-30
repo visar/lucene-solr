@@ -94,6 +94,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   
   protected boolean commitWithinSoftCommit;
 
+  protected boolean indexWriterCloseWaitsForMerges;
+  
   public DirectUpdateHandler2(SolrCore core) {
     super(core);
    
@@ -110,6 +112,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
     
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
+    indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
 
   }
@@ -129,6 +132,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, updateHandlerInfo.openSearcher, true);
     
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
+    indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
     UpdateLog existingLog = updateHandler.getUpdateLog();
     if (this.ulog != null && this.ulog == existingLog) {
@@ -786,7 +790,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
       }
 
-      if (writer != null) writer.close();
+      if (writer != null) writer.close(indexWriterCloseWaitsForMerges);
 
     } finally {
       solrCoreState.getCommitLock().unlock();
