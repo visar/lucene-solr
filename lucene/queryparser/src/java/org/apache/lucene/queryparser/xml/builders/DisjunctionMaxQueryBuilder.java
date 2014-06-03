@@ -47,7 +47,8 @@ public class DisjunctionMaxQueryBuilder implements QueryBuilder {
     dq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
 
     NodeList nl = e.getChildNodes();
-    for (int i = 0; i < nl.getLength(); i++) {
+    final int nl_len = nl.getLength();
+    for (int i = 0; i < nl_len; i++) {
       Node node = nl.item(i);
       if (node instanceof Element) { // all elements are disjuncts.
         Element queryElem = (Element) node;
