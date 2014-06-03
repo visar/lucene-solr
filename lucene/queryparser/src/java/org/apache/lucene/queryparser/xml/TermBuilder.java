@@ -76,7 +76,8 @@ public class TermBuilder {
     boolean called_extractTerms = false;
 
     final NodeList nl = e.getChildNodes();
-    for (int i = 0; i < nl.getLength(); i++) {
+    final int nl_len = nl.getLength();
+    for (int i = 0; i < nl_len; i++) {
       final Node node = nl.item(i);
       if (Node.ELEMENT_NODE == node.getNodeType() && node.getNodeName().equals("Term")) {
         extractTerms(

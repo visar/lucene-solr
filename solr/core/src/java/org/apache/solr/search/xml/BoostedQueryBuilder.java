@@ -65,7 +65,8 @@ public class BoostedQueryBuilder implements QueryBuilder {
       NodeList boostNodes = boostsElem.getChildNodes();
       List<ValueSource> boosts = new ArrayList<ValueSource>();
 
-      for (int i = 0; i < boostNodes.getLength(); i++) {
+      final int boostNodes_len = boostNodes.getLength();
+      for (int i = 0; i < boostNodes_len; i++) {
         Node boostNode = boostNodes.item(i);
         if (boostNode != null
             && boostNode.getNodeName().equals("Boost")) {
