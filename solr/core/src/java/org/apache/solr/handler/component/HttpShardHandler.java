@@ -80,11 +80,17 @@ public class HttpShardHandler extends ShardHandler {
 
   private static class SimpleSolrResponse extends SolrResponse {
     long elapsedTime;
+    long submitWaitingTime;
     NamedList<Object> nl;
 
     @Override
     public long getElapsedTime() {
       return elapsedTime;
+    }
+
+    @Override
+    public long getSubmitWaitingTime() {
+      return submitWaitingTime;
     }
 
     @Override
@@ -113,6 +119,9 @@ public class HttpShardHandler extends ShardHandler {
 
   @Override
   public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
+    // this is when the shard request is submitted e.g. by SearchHandler
+    final long startTime0 = System.nanoTime();
+
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(shard);
 
@@ -129,6 +138,9 @@ public class HttpShardHandler extends ShardHandler {
         SimpleSolrResponse ssr = new SimpleSolrResponse();
         srsp.setSolrResponse(ssr);
         long startTime = System.nanoTime();
+
+        // this is when the request is actually made
+        ssr.submitWaitingTime = (startTime - startTime0); // everything up to this point is pre-send waiting time
 
         try {
           params.remove(CommonParams.WT); // use default (currently javabin)

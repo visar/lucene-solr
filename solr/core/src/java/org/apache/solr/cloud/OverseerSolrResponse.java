@@ -35,6 +35,12 @@ public class OverseerSolrResponse extends SolrResponse {
   }
   
   @Override
+  public long getSubmitWaitingTime() {
+    // TODO Auto-generated method stub
+    return 0;
+  }
+  
+  @Override
   public void setResponse(NamedList<Object> rsp) {
     this.responseList = rsp;
   }
