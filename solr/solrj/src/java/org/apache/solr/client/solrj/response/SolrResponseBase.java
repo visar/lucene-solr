@@ -28,7 +28,6 @@ import org.apache.solr.common.util.NamedList;
 public class SolrResponseBase extends SolrResponse
 {
   private long elapsedTime = -1;
-  private long submitWaitingTime = -1;
   private NamedList<Object> response = null;
   private String requestUrl = null;
   
@@ -39,15 +38,6 @@ public class SolrResponseBase extends SolrResponse
 
   public void setElapsedTime(long elapsedTime) {
     this.elapsedTime = elapsedTime;
-  }
-
-  @Override
-  public long getSubmitWaitingTime() {
-    return submitWaitingTime;
-  }
-
-  public void setSubmitWaitingTime(long submitWaitingTime) {
-    this.submitWaitingTime = submitWaitingTime;
   }
 
   @Override

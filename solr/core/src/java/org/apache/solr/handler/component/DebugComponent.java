@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.search.Query;
@@ -227,19 +226,6 @@ public class DebugComponent extends SearchComponent
 
       if (rb.isDebugResults()) {
         explain = SolrPluginUtils.removeNulls(new SimpleOrderedMap<>(arr));
-      }
-
-      if (rb.isDebugTimings()) {
-        long submitWaitingTimeSum = 0;
-        for (ShardRequest sreq : rb.finished) {
-          for (ShardResponse srsp : sreq.responses) {
-            submitWaitingTimeSum += srsp.getSolrResponse().getSubmitWaitingTime();            
-          }
-        }
-        if (info == null) {
-          info = new SimpleOrderedMap<>();
-        }
-        info.add("submitWaitingTimeSum", TimeUnit.MILLISECONDS.convert(submitWaitingTimeSum, TimeUnit.NANOSECONDS));        
       }
 
       if (!hasGetDebugResponses) {

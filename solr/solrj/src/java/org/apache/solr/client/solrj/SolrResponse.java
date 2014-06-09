@@ -35,7 +35,6 @@ import org.apache.solr.common.util.NamedList;
  */
 public abstract class SolrResponse implements Serializable {
   public abstract long getElapsedTime();
-  public abstract long getSubmitWaitingTime();
   
   public abstract void setResponse(NamedList<Object> rsp);
   
