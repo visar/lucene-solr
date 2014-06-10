@@ -256,11 +256,17 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         }
 
         // call all components
+        RTimer distributedProcess_stageSubTimer = null;
+        if (stageSubTimer != null) {
+          distributedProcess_stageSubTimer = stageSubTimer.sub("distributedProcess");
+        }
         for( SearchComponent c : components ) {
           // the next stage is the minimum of what all components report
           nextStage = Math.min(nextStage, c.distributedProcess(rb));
         }
-
+        if (distributedProcess_stageSubTimer != null ) {
+          distributedProcess_stageSubTimer.stop();
+        }
 
         // check the outgoing queue and send requests
         while (rb.outgoing.size() > 0) {
@@ -304,6 +310,10 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
           // this loop)
           boolean tolerant = rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false);
           while (rb.outgoing.size() == 0) {
+            RTimer take_stageSubTimer = null;
+            if (stageSubTimer != null) {
+              take_stageSubTimer = stageSubTimer.sub("take");
+            }
             ShardResponse srsp = tolerant ? 
                 shardHandler1.takeCompletedIncludingErrors():
                 shardHandler1.takeCompletedOrError();
@@ -325,18 +335,35 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                 }
               }
             }
+            if (take_stageSubTimer != null ) {
+              take_stageSubTimer.stop();
+            }
 
             rb.finished.add(srsp.getShardRequest());
 
             // let the components see the responses to the request
+            RTimer handle_stageSubTimer = null;
+            if (stageSubTimer != null) {
+              handle_stageSubTimer = stageSubTimer.sub("handle");
+            }
             for(SearchComponent c : components) {
               c.handleResponses(rb, srsp.getShardRequest());
+            }
+            if (handle_stageSubTimer != null ) {
+              handle_stageSubTimer.stop();
             }
           }
         }
 
+        RTimer finish_stageSubTimer = null;
+        if (stageSubTimer != null) {
+          finish_stageSubTimer = stageSubTimer.sub("finish");
+        }
         for(SearchComponent c : components) {
           c.finishStage(rb);
+        }
+        if (finish_stageSubTimer != null ) {
+          finish_stageSubTimer.stop();
         }
 
         if (stageSubTimer != null ) {
