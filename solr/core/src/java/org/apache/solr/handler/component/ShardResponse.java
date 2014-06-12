@@ -27,7 +27,11 @@ public final class ShardResponse {
   private int rspCode;
   private Throwable exception;
   private SolrResponse rsp;
-
+  private Long submitWaitingTime_start = null;
+  private Long submitWaitingTime_end = null;
+  private Long takeWaitingTime_start = null;
+  private Long takeWaitingTime_end = null;
+  
   @Override
   public String toString() {
     return "ShardResponse:{shard="+shard+",shardAddress="+shardAddress
@@ -97,4 +101,24 @@ public final class ShardResponse {
 
   void setShardAddress(String addr) { this.shardAddress = addr; }
 
+  public void setSubmitWaitingTime_start(Long val) { submitWaitingTime_start = val; }
+  public void setSubmitWaitingTime_end(Long val) { submitWaitingTime_end = val; }
+  public Long getSubmitWaitingTime() {
+    if (submitWaitingTime_end != null && submitWaitingTime_start != null) {
+      return (submitWaitingTime_end - submitWaitingTime_start);
+    } else {
+      return null;
+    }
+  }
+
+  public void setTakeWaitingTime_start(Long val) { takeWaitingTime_start = val; }
+  public void setTakeWaitingTime_end(Long val) { takeWaitingTime_end = val; }
+  public Long getTakeWaitingTime() {
+    if (takeWaitingTime_end != null && takeWaitingTime_start != null) {
+      return (takeWaitingTime_end - takeWaitingTime_start);
+    } else {
+      return null;
+    }
+  }
+  
 }
