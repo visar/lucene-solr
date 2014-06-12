@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.search.Query;
@@ -52,6 +53,12 @@ import org.apache.solr.util.SolrPluginUtils;
 public class DebugComponent extends SearchComponent
 {
   public static final String COMPONENT_NAME = "debug";
+  
+  private static final String DISTRIB_TIMING = "distribTiming";
+  
+  private static final String SUBMIT_WAITING_TIME = "submitWaiting";
+  private static final String ELAPSED_TIME = "elapsed";
+  private static final String TAKE_WAITING_TIME = "takeWaiting";
   
   /**
    * A counter to ensure that no RID is equal, even if they fall in the same millisecond
@@ -177,8 +184,84 @@ public class DebugComponent extends SearchComponent
     }
   }
 
+  private class Metric {
+    private long count = 0;
+    private long sum = 0;
+    private long min = Long.MAX_VALUE;
+    private long max = Long.MIN_VALUE;
+    private final TimeUnit sourceUnit;
+    
+    Metric(TimeUnit sourceUnit) {
+      this.sourceUnit = sourceUnit;
+    }
+
+    void record(long val) {
+      count += 1;
+      sum += val;
+      if (val < min) {
+        min = val;
+      }
+      if (val > max) {
+        max = val;
+      }
+    }
+
+    Object toObject(TimeUnit destinationUnit)
+    {
+      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
+      nl.add("count", count);
+      if (sourceUnit != destinationUnit) {
+        nl.add("sum", destinationUnit.convert(sum, sourceUnit));
+        nl.add("min", destinationUnit.convert(min, sourceUnit));
+        nl.add("max", destinationUnit.convert(max, sourceUnit));        
+      } else {
+        nl.add("sum", sum);
+        nl.add("min", min);
+        nl.add("max", max);
+      }
+      return nl;
+    }    
+  };
+  
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
+    if (rb.isDebugTimings() && rb.stage > ResponseBuilder.STAGE_START) {
+      Metric submitWaitingTime = new Metric(TimeUnit.NANOSECONDS);
+      Metric elapsedTime = new Metric(TimeUnit.MILLISECONDS);
+      Metric takeWaitingTime = new Metric(TimeUnit.NANOSECONDS);
+      
+      for (ShardResponse srsp : sreq.responses) {
+        submitWaitingTime.record(srsp.getSubmitWaitingTime());
+        elapsedTime.record(srsp.getSolrResponse().getElapsedTime()); 
+        takeWaitingTime.record(srsp.getTakeWaitingTime());            
+      }
+      
+      final String stage = stages.get(rb.stage);
+      
+      NamedList<Object> debug_info = rb.getDebugInfo();
+      if (debug_info == null) {
+        debug_info = new SimpleOrderedMap<>();
+      }        
+      
+      NamedList<Object> distribTiming_info = (NamedList<Object>) debug_info.get(DISTRIB_TIMING);
+      if (distribTiming_info == null) {
+        debug_info.add(DISTRIB_TIMING, new SimpleOrderedMap<>());
+        distribTiming_info = (NamedList<Object>) debug_info.get(DISTRIB_TIMING);
+      }
+      
+      NamedList<Object> stage_info = (NamedList<Object>) distribTiming_info.get(stage);
+      if (stage_info == null) {
+        distribTiming_info.add(stage, new SimpleOrderedMap<>());
+        stage_info = (NamedList<Object>) distribTiming_info.get(stage);
+      }
+      
+      stage_info.add(SUBMIT_WAITING_TIME, submitWaitingTime.toObject(TimeUnit.MILLISECONDS));        
+      stage_info.add(ELAPSED_TIME, elapsedTime.toObject(TimeUnit.MILLISECONDS));
+      stage_info.add(TAKE_WAITING_TIME, takeWaitingTime.toObject(TimeUnit.MILLISECONDS));        
+      
+      rb.setDebugInfo(debug_info);
+    }
+    
     if (rb.isDebugTrack() && rb.isDistrib && !rb.finished.isEmpty()) {
       @SuppressWarnings("unchecked")
       List<Object> stageList = (List<Object>) ((NamedList<Object>)rb.getDebugInfo().get("track")).get(stages.get(rb.stage));
@@ -264,7 +347,9 @@ public class DebugComponent extends SearchComponent
     if(responseHeader != null) {
       namedList.add("QTime", responseHeader.get("QTime"));
     }
-    namedList.add("ElapsedTime", shardResponse.getSolrResponse().getElapsedTime());
+    namedList.add(SUBMIT_WAITING_TIME, shardResponse.getSubmitWaitingTime());            
+    namedList.add(ELAPSED_TIME, shardResponse.getSolrResponse().getElapsedTime());
+    namedList.add(TAKE_WAITING_TIME, shardResponse.getTakeWaitingTime());            
     namedList.add("RequestPurpose", shardResponse.getShardRequest().params.get(CommonParams.REQUEST_PURPOSE));
     SolrDocumentList docList = (SolrDocumentList)shardResponse.getSolrResponse().getResponse().get("response");
     if(docList != null) {
