@@ -735,7 +735,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         // searching.  In this case we write the next
         // segments_N file with no segments:
         try {
-          segmentInfos.read(directory);
+          segmentInfos.read(directory, config.getGenLookaheadCountLimit(), config.getGenLookbackCountLimit());
           segmentInfos.clear();
         } catch (IOException e) {
           // Likely this means it's a fresh directory
@@ -746,7 +746,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         // segments) pending:
         changed();
       } else {
-        segmentInfos.read(directory);
+        segmentInfos.read(directory, config.getGenLookaheadCountLimit(), config.getGenLookbackCountLimit());
 
         IndexCommit commit = config.getIndexCommit();
         if (commit != null) {

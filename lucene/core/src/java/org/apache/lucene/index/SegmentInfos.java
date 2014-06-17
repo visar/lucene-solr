@@ -407,6 +407,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   /** Find the latest commit ({@code segments_N file}) and
    *  load all {@link SegmentCommitInfo}s. */
   public final void read(Directory directory) throws IOException {
+    read(directory, defaultGenLookaheadCountLimit, defaultGenLookbackCountLimit);
+  }
+
+  /** Find the latest commit ({@code segments_N file}) and
+   *  load all {@link SegmentCommitInfo}s using specified
+   *  look ahead/back retry logic. */
+  public final void read(Directory directory, int genLookaheadCountLimit, int genLookbackCountLimit) throws IOException {
     generation = lastGeneration = -1;
 
     new FindSegmentsFile(directory) {
@@ -416,7 +423,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         read(directory, segmentFileName);
         return null;
       }
-    }.run();
+    }.run(null, genLookaheadCountLimit, genLookbackCountLimit);
   }
 
   // Only non-null after prepareCommit has been called and
@@ -641,7 +648,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
   /* Advanced configuration of retry logic in loading
      segments_N file */
-  private static int defaultGenLookaheadCount = 10;
+  private static int defaultGenLookaheadCountLimit = 10;
+  private static int defaultGenLookbackCountLimit = 1;
 
   /**
    * Advanced: set how many times to try incrementing the
@@ -652,19 +660,42 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    *
    * @lucene.experimental
    */
-  public static void setDefaultGenLookaheadCount(int count) {
-    defaultGenLookaheadCount = count;
+  public static void setDefaultGenLookaheadCountLimit(int limit) {
+    defaultGenLookaheadCountLimit = limit;
   }
 
   /**
-   * Returns the {@code defaultGenLookaheadCount}.
+   * Returns the {@code defaultGenLookaheadCountLimit}.
    *
-   * @see #setDefaultGenLookaheadCount
+   * @see #setDefaultGenLookaheadCountLimit
    *
    * @lucene.experimental
    */
-  public static int getDefaultGenLookahedCount() {
-    return defaultGenLookaheadCount;
+  public static int getDefaultGenLookaheadCountLimit() {
+    return defaultGenLookaheadCountLimit;
+  }
+
+  /**
+   * Advanced: set how many times to try decrementing the
+   * gen when loading the segments file.  This only runs if
+   * the primary (listing directory) method failed to find
+   * the segments file on the first try.
+   *
+   * @lucene.experimental
+   */
+  public static void setDefaultGenLookbackCountLimit(int limit) {
+    defaultGenLookbackCountLimit = limit;
+  }
+
+  /**
+   * Returns the {@code defaultGenLookbackCountLimit}.
+   *
+   * @see #setDefaultGenLookbackCountLimit
+   *
+   * @lucene.experimental
+   */
+  public static int getDefaultGenLookbackCountLimit() {
+    return defaultGenLookbackCountLimit;
   }
 
   /**
@@ -699,7 +730,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     
     final Directory directory;
 
-    /** Sole constructor. */ 
+    /** Sole constructor. */
     public FindSegmentsFile(Directory directory) {
       this.directory = directory;
     }
@@ -712,6 +743,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     
     /** Run {@link #doBody} on the provided commit. */
     public Object run(IndexCommit commit) throws IOException {
+      return run(commit, defaultGenLookaheadCountLimit, defaultGenLookbackCountLimit);
+    }
+
+    public Object run(IndexCommit commit, int genLookaheadCountLimit, int genLookbackCountLimit) throws IOException {
       if (commit != null) {
         if (directory != commit.getDirectory())
           throw new IOException("the specified commit does not match the specified Directory");
@@ -834,7 +869,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         // file contents cache seem to be stale, just
         // advance the generation.
         if (!useFirstMethod) {
-          if (genLookaheadCount < defaultGenLookaheadCount) {
+          if (genLookaheadCount < genLookaheadCountLimit) {
             gen++;
             genLookaheadCount++;
             if (infoStream != null) {
@@ -884,35 +919,38 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
             // possibly a segments_(N-1) (because gen > 1).
             // So, check if the segments_(N-1) exists and
             // try it if so:
-            String prevSegmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
-                                                                               "",
-                                                                               gen-1);
-
-            boolean prevExists;
-
-            try {
-              directory.openInput(prevSegmentFileName, IOContext.DEFAULT).close();
-              prevExists = true;
-            } catch (IOException ioe) {
-              prevExists = false;
-            }
-
-            if (prevExists) {
-              if (infoStream != null) {
-                message("fallback to prior segment file '" + prevSegmentFileName + "'");
-              }
+            
+            for (int ii=1; ii<=genLookbackCountLimit && gen > ii; ++ii) {
+              String prevSegmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
+                  "",
+                  gen-ii);
+              
+              boolean prevExists;
+              
               try {
-                Object v = doBody(prevSegmentFileName);
+                directory.openInput(prevSegmentFileName, IOContext.DEFAULT).close();
+                prevExists = true;
+              } catch (IOException ioe) {
+                prevExists = false;
+              }
+              
+              if (prevExists) {
                 if (infoStream != null) {
-                  message("success on fallback " + prevSegmentFileName);
+                  message("fallback to prior segment file '" + prevSegmentFileName + "'");
                 }
-                return v;
-              } catch (IOException err2) {
-                if (infoStream != null) {
-                  message("secondary Exception on '" + prevSegmentFileName + "': " + err2 + "'; will retry");
+                try {
+                  Object v = doBody(prevSegmentFileName);
+                  if (infoStream != null) {
+                    message("success on fallback " + prevSegmentFileName);
+                  }
+                  return v;
+                } catch (IOException err2) {
+                  if (infoStream != null) {
+                    message("secondary Exception on '" + prevSegmentFileName + "': " + err2 + "'; will retry");
+                  }
                 }
               }
-            }
+            }            
           }
         }
       }
