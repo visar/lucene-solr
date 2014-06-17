@@ -311,6 +311,24 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     return writeLockTimeout;
   }
 
+  /** Advanced configuration of retry logic in loading segments_N file */
+  public IndexWriterConfig setGenLookaheadCountLimit(int val) {
+    this.genLookaheadCountLimit = val;
+    return this;
+  }
+  public IndexWriterConfig setGenLookbackCountLimit(int val) {
+    this.genLookbackCountLimit = val;
+    return this;
+  }
+  @Override
+  public int getGenLookaheadCountLimit() {
+    return genLookaheadCountLimit;
+  }  
+  @Override
+  public int getGenLookbackCountLimit() {
+    return genLookbackCountLimit;
+  }  
+  
   /**
    * Expert: {@link MergePolicy} is invoked whenever there are changes to the
    * segments in the index. Its role is to select which merges to do, if any,
