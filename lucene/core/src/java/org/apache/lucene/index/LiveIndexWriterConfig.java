@@ -64,6 +64,10 @@ public class LiveIndexWriterConfig {
   /** {@link MergeScheduler} to use for running merges. */
   protected volatile MergeScheduler mergeScheduler;
 
+  /** Advanced configuration of retry logic in loading segments_N file */
+  protected volatile int genLookaheadCountLimit;
+  protected volatile int genLookbackCountLimit;
+
   /** Timeout when trying to obtain the write lock on init. */
   protected volatile long writeLockTimeout;
 
@@ -120,6 +124,8 @@ public class LiveIndexWriterConfig {
     openMode = OpenMode.CREATE_OR_APPEND;
     similarity = IndexSearcher.getDefaultSimilarity();
     mergeScheduler = new ConcurrentMergeScheduler();
+    genLookaheadCountLimit = SegmentInfos.getDefaultGenLookaheadCountLimit();
+    genLookbackCountLimit = SegmentInfos.getDefaultGenLookbackCountLimit();
     writeLockTimeout = IndexWriterConfig.WRITE_LOCK_TIMEOUT;
     indexingChain = DocumentsWriterPerThread.defaultIndexingChain;
     codec = Codec.getDefault();
@@ -463,6 +469,14 @@ public class LiveIndexWriterConfig {
   public long getWriteLockTimeout() {
     return writeLockTimeout;
   }
+
+  /** Advanced configuration of retry logic in loading segments_N file */
+  public int getGenLookaheadCountLimit() {
+    return genLookaheadCountLimit;
+  }  
+  public int getGenLookbackCountLimit() {
+    return genLookbackCountLimit;
+  }  
   
   /** Returns the current {@link Codec}. */
   public Codec getCodec() {
@@ -601,6 +615,8 @@ public class LiveIndexWriterConfig {
     sb.append("openMode=").append(getOpenMode()).append("\n");
     sb.append("similarity=").append(getSimilarity().getClass().getName()).append("\n");
     sb.append("mergeScheduler=").append(getMergeScheduler()).append("\n");
+    sb.append("genLookaheadCountLimit=").append(getGenLookaheadCountLimit()).append("\n");
+    sb.append("genLookbackCountLimit=").append(getGenLookbackCountLimit()).append("\n");
     sb.append("default WRITE_LOCK_TIMEOUT=").append(IndexWriterConfig.WRITE_LOCK_TIMEOUT).append("\n");
     sb.append("writeLockTimeout=").append(getWriteLockTimeout()).append("\n");
     sb.append("codec=").append(getCodec()).append("\n");
