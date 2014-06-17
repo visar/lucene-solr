@@ -90,6 +90,8 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getMergeScheduler");
     getters.add("getOpenMode");
     getters.add("getSimilarity");
+    getters.add("getGenLookaheadCountLimit");
+    getters.add("getGenLookbackCountLimit");
     getters.add("getWriteLockTimeout");
     getters.add("getDefaultWriteLockTimeout");
     getters.add("getMaxBufferedDeleteTerms");
