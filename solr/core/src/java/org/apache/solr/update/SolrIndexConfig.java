@@ -63,6 +63,8 @@ public class SolrIndexConfig {
 
   public final double ramBufferSizeMB;
 
+  public final int genLookaheadCountLimit;
+  public final int genLookbackCountLimit;
   public final int writeLockTimeout;
   public final String lockType;
   public final PluginInfo mergePolicyInfo;
@@ -92,6 +94,8 @@ public class SolrIndexConfig {
     maxIndexingThreads = IndexWriterConfig.DEFAULT_MAX_THREAD_STATES;
     mergeFactor = -1;
     ramBufferSizeMB = 100;
+    genLookaheadCountLimit = -1;
+    genLookbackCountLimit = -1;
     writeLockTimeout = -1;
     lockType = LOCK_TYPE_NATIVE;
     mergePolicyInfo = null;
@@ -144,6 +148,9 @@ public class SolrIndexConfig {
     maxIndexingThreads=solrConfig.getInt(prefix+"/maxIndexingThreads",def.maxIndexingThreads);
     mergeFactor=solrConfig.getInt(prefix+"/mergeFactor",def.mergeFactor);
     ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
+
+    genLookaheadCountLimit=solrConfig.getInt(prefix+"/genLookaheadCountLimit", def.genLookaheadCountLimit);
+    genLookbackCountLimit=solrConfig.getInt(prefix+"/genLookbackCountLimit", def.genLookbackCountLimit);
 
     writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
     lockType=solrConfig.get(prefix+"/lockType", def.lockType);
@@ -205,6 +212,12 @@ public class SolrIndexConfig {
 
     if (ramBufferSizeMB != -1)
       iwc.setRAMBufferSizeMB(ramBufferSizeMB);
+
+    if (genLookaheadCountLimit != -1)
+      iwc.setGenLookaheadCountLimit(genLookaheadCountLimit);
+
+    if (genLookbackCountLimit != -1)
+      iwc.setGenLookbackCountLimit(genLookbackCountLimit);
 
     if (writeLockTimeout != -1)
       iwc.setWriteLockTimeout(writeLockTimeout);
