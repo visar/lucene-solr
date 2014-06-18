@@ -91,12 +91,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
   public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 16.0;
 
   /**
-   * Advanced configuration of retry logic in loading segments_N file
-   */
-  public static int DEFAULT_GEN_LOOKAHEAD_COUNT_LIMIT = SegmentInfos.getDefaultGenLookaheadCountLimit();
-  public static int DEFAULT_GEN_LOOKBACK_COUNT_LIMIT = SegmentInfos.getDefaultGenLookbackCountLimit();
-  
-  /**
    * Default value for the write lock timeout (1,000 ms).
    *
    * @see #setDefaultWriteLockTimeout(long)

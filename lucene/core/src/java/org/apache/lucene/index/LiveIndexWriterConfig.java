@@ -124,8 +124,8 @@ public class LiveIndexWriterConfig {
     openMode = OpenMode.CREATE_OR_APPEND;
     similarity = IndexSearcher.getDefaultSimilarity();
     mergeScheduler = new ConcurrentMergeScheduler();
-    genLookaheadCountLimit = IndexWriterConfig.DEFAULT_GEN_LOOKAHEAD_COUNT_LIMIT;
-    genLookbackCountLimit = IndexWriterConfig.DEFAULT_GEN_LOOKBACK_COUNT_LIMIT;
+    genLookaheadCountLimit = SegmentInfos.getDefaultGenLookaheadCountLimit();
+    genLookbackCountLimit = SegmentInfos.getDefaultGenLookbackCountLimit();
     writeLockTimeout = IndexWriterConfig.WRITE_LOCK_TIMEOUT;
     indexingChain = DocumentsWriterPerThread.defaultIndexingChain;
     codec = Codec.getDefault();
