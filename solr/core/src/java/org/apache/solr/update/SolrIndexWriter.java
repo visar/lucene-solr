@@ -123,13 +123,28 @@ public class SolrIndexWriter extends IndexWriter {
   
   @Override
   public void close() throws IOException {
+    close_impl(null);
+  }
+
+  /**
+   * See IndexWriter.close(waitForMerges) for details.
+   */
+  @Override
+  public void close(boolean waitForMerges) throws IOException {
+    close_impl(waitForMerges);
+  }
+  
+  private void close_impl(Boolean waitForMerges) throws IOException {
     log.debug("Closing Writer " + name);
     Directory directory = getDirectory();
     final InfoStream infoStream = isClosed ? null : getConfig().getInfoStream();
     try {
       while (true) {
         try {
-          super.close();
+          if (null == waitForMerges)
+            super.close();
+          else
+            super.close(waitForMerges);
         } catch (ThreadInterruptedException e) {
           // don't allow interruption
           continue;
