@@ -894,7 +894,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    */
   @Override
   public void close() throws IOException {
-    close(true);
+    close_impl(true);
   }
 
   /**
@@ -921,6 +921,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * then return.
    */
   public void close(boolean waitForMerges) throws IOException {
+    close_impl(waitForMerges);
+  }
+  
+  private void close_impl(boolean waitForMerges) throws IOException {
 
     // Ensure that only one thread actually gets to do the
     // closing, and make sure no commit is also in progress:
