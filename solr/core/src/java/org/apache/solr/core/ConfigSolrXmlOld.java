@@ -18,6 +18,7 @@ package org.apache.solr.core;
  */
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.ConfigSolr.CfgProp;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -92,6 +93,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     failIfFound("solr/str[@name='sharedLib']");
     failIfFound("solr/str[@name='shareSchema']");
     failIfFound("solr/int[@name='transientCacheSize']");
+    failIfFound("solr/int[@name='shutdownCoresCloseTimeoutSeconds']");
     failIfFound("solr/solrcloud/int[@name='zkClientTimeout']");
     failIfFound("solr/solrcloud/int[@name='zkHost']");
     
@@ -164,6 +166,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         config.getVal("solr/cores/@shareSchema", false));
     propMap.put(CfgProp.SOLR_TRANSIENTCACHESIZE,
         config.getVal("solr/cores/@transientCacheSize", false));
+    // CfgProp.SOLR_SHUTDOWN_CORES_CLOSE_TIMEOUT_SECONDS not currently supported in 'old style'
     propMap.put(CfgProp.SOLR_ZKCLIENTTIMEOUT,
         config.getVal("solr/cores/@zkClientTimeout", false));
     propMap.put(CfgProp.SOLR_CONFIGSETBASEDIR, config.getVal("solr/cores/@configSetBaseDir", false));

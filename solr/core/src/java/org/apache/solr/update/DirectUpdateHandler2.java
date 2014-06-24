@@ -773,7 +773,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           }
         }
       } catch (Throwable th) {
-        log.error("Error in final commit", th);
+        log.error("Error in final commit", th, th.getSuppressed());
         if (th instanceof OutOfMemoryError) {
           throw (OutOfMemoryError) th;
         }

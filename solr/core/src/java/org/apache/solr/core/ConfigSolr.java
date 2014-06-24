@@ -133,6 +133,13 @@ public abstract class ConfigSolr {
     return get(CfgProp.SOLR_ZKHOST, null);
   }
 
+  public Integer getShutdownCoresCloseTimeoutSeconds() {
+    String sysProp = System.getProperty("shutdownCoresCloseTimeoutSeconds");
+    if (sysProp != null)
+      return new Integer(Integer.parseInt(sysProp));
+    return getInteger(CfgProp.SOLR_SHUTDOWN_CORES_CLOSE_TIMEOUT_SECONDS, DEFAULT_SHUTDOWN_CORES_CLOSE_TIMEOUT_SECONDS);
+  }
+
   public int getZkClientTimeout() {
     String sysProp = System.getProperty("zkClientTimeout");
     if (sysProp != null)
@@ -140,6 +147,7 @@ public abstract class ConfigSolr {
     return getInt(CfgProp.SOLR_ZKCLIENTTIMEOUT, DEFAULT_ZK_CLIENT_TIMEOUT);
   }
 
+  private static final Integer DEFAULT_SHUTDOWN_CORES_CLOSE_TIMEOUT_SECONDS = null;
   private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 15000;
   private static final int DEFAULT_LEADER_VOTE_WAIT = 180000;  // 3 minutes
   private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 180000;
@@ -274,6 +282,7 @@ public abstract class ConfigSolr {
     SOLR_SHARESCHEMA,
     SOLR_TRANSIENTCACHESIZE,
     SOLR_GENERICCORENODENAMES,
+    SOLR_SHUTDOWN_CORES_CLOSE_TIMEOUT_SECONDS,
     SOLR_ZKCLIENTTIMEOUT,
     SOLR_ZKHOST,
     SOLR_LEADERCONFLICTRESOLVEWAIT,
@@ -306,6 +315,12 @@ public abstract class ConfigSolr {
     String val = propMap.get(prop);
     if (val != null) val = PropertiesUtil.substituteProperty(val, null);
     return (val == null) ? def : Integer.parseInt(val);
+  }
+
+  public Integer getInteger(CfgProp prop, Integer def) {
+    String val = propMap.get(prop);
+    if (val != null) val = PropertiesUtil.substituteProperty(val, null);
+    return (val == null) ? def : new Integer(Integer.parseInt(val));
   }
 
   public boolean getBool(CfgProp prop, boolean defValue) {
