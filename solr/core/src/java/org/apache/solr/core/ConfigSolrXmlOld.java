@@ -92,6 +92,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     failIfFound("solr/str[@name='sharedLib']");
     failIfFound("solr/str[@name='shareSchema']");
     failIfFound("solr/int[@name='transientCacheSize']");
+    failIfFound("solr/int[@name='shutdownCoresCloseTimeoutSeconds']");
     failIfFound("solr/solrcloud/int[@name='zkClientTimeout']");
     failIfFound("solr/solrcloud/int[@name='zkHost']");
     
@@ -146,6 +147,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     storeConfigPropertyAsString(CfgProp.SOLR_MANAGEMENTPATH, "solr/cores/@managementPath");
     storeConfigPropertyAsBoolean(CfgProp.SOLR_SHARESCHEMA, "solr/cores/@shareSchema");
     storeConfigPropertyAsInt(CfgProp.SOLR_TRANSIENTCACHESIZE, "solr/cores/@transientCacheSize");
+    // CfgProp.SOLR_SHUTDOWN_CORES_CLOSE_TIMEOUT_SECONDS not currently supported in 'old style'
     storeConfigPropertyAsInt(CfgProp.SOLR_ZKCLIENTTIMEOUT, "solr/cores/@zkClientTimeout");
     storeConfigPropertyAsString(CfgProp.SOLR_CONFIGSETBASEDIR, "solr/cores/@configSetBaseDir");
 

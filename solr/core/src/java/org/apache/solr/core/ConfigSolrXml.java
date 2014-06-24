@@ -139,6 +139,7 @@ public class ConfigSolrXml extends ConfigSolr {
 
     storeConfigPropertyAsInt(s, nl, CfgProp.SOLR_CORELOADTHREADS, "coreLoadThreads");
     storeConfigPropertyAsInt(s, nl, CfgProp.SOLR_TRANSIENTCACHESIZE, "transientCacheSize");
+    storeConfigPropertyAsInt(s, nl, CfgProp.SOLR_SHUTDOWN_CORES_CLOSE_TIMEOUT_SECONDS, "shutdownCoresCloseTimeoutSeconds");
 
     errorOnLeftOvers(s, nl);
   }

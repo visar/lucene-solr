@@ -18,6 +18,8 @@ package org.apache.solr.core;
  */
 
 import com.google.common.collect.Lists;
+
+import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,11 +27,13 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 
 
 class SolrCores {
@@ -89,9 +93,20 @@ class SolrCores {
     }
   }
 
+  protected void close() {
+    close(null);
+  }
+
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut down, so we need to
   // make a temporary copy of the names and shut them down outside the lock.
-  protected void close() {
+  protected void close(final Integer timeoutSeconds) {
+    CoreContainer.log.info("SolrCores.close timeoutSeconds={}", timeoutSeconds);
+
+    final Long timeoutNanoSeconds = (timeoutSeconds == null ? null : new Long(TimeUnit.NANOSECONDS.convert(timeoutSeconds.longValue(), TimeUnit.SECONDS)));
+    final long startTime = System.nanoTime();
+    long elapsedNanoSeconds = 0;
+
+    Collection<SolrCore> unclosedCoreList = new ArrayList<>();
     Collection<SolrCore> coreList = new ArrayList<>();
 
     // It might be possible for one of the cores to move from one list to another while we're closing them. So
@@ -99,6 +114,29 @@ class SolrCores {
     // list to the pendingCloses list.
 
     do {
+
+      if (!unclosedCoreList.isEmpty()) { // previous iteration(s) left some cores unclosed
+        if (coreList.isEmpty()) { // previous iteration around the loop issued no further 'core.close()' calls
+          try {
+            // wait a little to give the unclosed cores a chance to become closed cores
+            final long elapsedSeconds = TimeUnit.SECONDS.convert(elapsedNanoSeconds, TimeUnit.NANOSECONDS);
+            CoreContainer.log.info("SolrCores.close - {} cores still unclosed - waiting 100 ms before checking again (elapsedSeconds={} timeoutSeconds={})",
+                unclosedCoreList.size(), elapsedSeconds, timeoutSeconds);
+            Thread.sleep(100);
+          } catch (InterruptedException ie) {
+            ThreadInterruptedException ex = new ThreadInterruptedException(ie);
+            throw ex;
+          }
+        }
+
+        for (Iterator<SolrCore> it = unclosedCoreList.iterator(); it.hasNext(); ) {
+          SolrCore core = it.next();
+          if (core.isClosed()) {
+            it.remove();
+          }
+        }
+      }
+
       coreList.clear();
       synchronized (modifyLock) {
         // make a copy of the cores then clear the map so the core isn't handed out to a request again
@@ -115,6 +153,10 @@ class SolrCores {
       for (SolrCore core : coreList) {
         try {
           core.close();
+          if (!core.isClosed()) {
+            CoreContainer.log.info("SolrCores.close - core={} is not yet closed", core);
+            unclosedCoreList.add(core);
+          }
         } catch (Throwable e) {
           SolrException.log(CoreContainer.log, "Error shutting down core", e);
           if (e instanceof Error) {
@@ -122,7 +164,17 @@ class SolrCores {
           }
         }
       }
-    } while (coreList.size() > 0);
+
+      elapsedNanoSeconds = System.nanoTime() - startTime;
+
+      // while 'either list is non-empty' and 'timeout is absent or not-yet-reached'
+    } while ((!coreList.isEmpty() || !unclosedCoreList.isEmpty()) && (null == timeoutNanoSeconds || elapsedNanoSeconds < timeoutNanoSeconds.longValue()));
+
+    if (!unclosedCoreList.isEmpty()) {
+      final long elapsedSeconds = TimeUnit.SECONDS.convert(elapsedNanoSeconds, TimeUnit.NANOSECONDS);
+      CoreContainer.log.warn("SolrCores.close - unclosedCoreList={} elapsedSeconds={} timeoutSeconds={}",
+          unclosedCoreList, elapsedSeconds, timeoutSeconds);
+    }
   }
 
   //WARNING! This should be the _only_ place you put anything into the list of transient cores!
