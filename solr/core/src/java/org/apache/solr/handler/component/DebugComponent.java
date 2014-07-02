@@ -59,6 +59,7 @@ public class DebugComponent extends SearchComponent
   private static final String SUBMIT_WAITING_TIME = "submitWaiting";
   private static final String ELAPSED_TIME = "elapsed";
   private static final String TAKE_WAITING_TIME = "takeWaiting";
+  private static final String BREAKDOWN = "breakdown";
   
   /**
    * A counter to ensure that no RID is equal, even if they fall in the same millisecond
@@ -191,6 +192,10 @@ public class DebugComponent extends SearchComponent
     private long max = Long.MIN_VALUE;
     private final TimeUnit sourceUnit;
     
+    Metric() {
+      this.sourceUnit = null;
+    }
+
     Metric(TimeUnit sourceUnit) {
       this.sourceUnit = sourceUnit;
     }
@@ -205,7 +210,23 @@ public class DebugComponent extends SearchComponent
         max = val;
       }
     }
+    
+    void add(final Metric other) {
+      this.count += other.count;
+      this.sum += other.sum;
+      if (other.min < this.min) {
+        this.min = other.min;
+      }
+      if (other.max > this.max) {
+        this.max = other.max;
+      }
+    }
 
+    Object toObject()
+    {
+      return toObject(sourceUnit);
+    }
+    
     Object toObject(TimeUnit destinationUnit)
     {
       SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
@@ -221,6 +242,12 @@ public class DebugComponent extends SearchComponent
       }
       return nl;
     }    
+
+    @Override
+    public String toString()
+    {
+      return toObject().toString();
+    }
   };
   
   @Override
@@ -229,11 +256,19 @@ public class DebugComponent extends SearchComponent
       Metric submitWaitingTime = new Metric(TimeUnit.NANOSECONDS);
       Metric elapsedTime = new Metric(TimeUnit.MILLISECONDS);
       Metric takeWaitingTime = new Metric(TimeUnit.NANOSECONDS);
+      NamedList<Object> debug = null;
       
       for (ShardResponse srsp : sreq.responses) {
         submitWaitingTime.record(srsp.getSubmitWaitingTime());
         elapsedTime.record(srsp.getSolrResponse().getElapsedTime()); 
         takeWaitingTime.record(srsp.getTakeWaitingTime());            
+
+        NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
+        debug = (NamedList)merge(sdebug, debug, EXCLUDE_SET, true);
+      }
+      
+      if (debug != null) {
+        debug = convertMetric(debug);
       }
       
       final String stage = stages.get(rb.stage);
@@ -258,6 +293,7 @@ public class DebugComponent extends SearchComponent
       stage_info.add(SUBMIT_WAITING_TIME, submitWaitingTime.toObject(TimeUnit.MILLISECONDS));        
       stage_info.add(ELAPSED_TIME, elapsedTime.toObject(TimeUnit.MILLISECONDS));
       stage_info.add(TAKE_WAITING_TIME, takeWaitingTime.toObject(TimeUnit.MILLISECONDS));        
+      stage_info.add(BREAKDOWN, debug);
       
       rb.setDebugInfo(debug_info);
     }
@@ -290,7 +326,7 @@ public class DebugComponent extends SearchComponent
       for (ShardRequest sreq : rb.finished) {
         for (ShardResponse srsp : sreq.responses) {
           NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
-          info = (NamedList)merge(sdebug, info, EXCLUDE_SET);
+          info = (NamedList)merge(sdebug, info, EXCLUDE_SET, false);
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
             hasGetDebugResponses = true;
             if (rb.isDebugResults()) {
@@ -359,7 +395,22 @@ public class DebugComponent extends SearchComponent
     return namedList;
   }
 
-  Object merge(Object source, Object dest, Set<String> exclude) {
+  NamedList<Object> convertMetric(NamedList<Object> info) {
+    if (info != null) {
+      for (int ii=0; ii<info.size(); ii++) {
+        Object sval = info.getVal(ii);
+        if (sval instanceof Metric) {
+          info.setVal(ii, ((Metric) sval).toObject());
+        }
+        else if (sval instanceof NamedList) {
+          info.setVal(ii, convertMetric((NamedList<Object>)sval));
+        }
+      }
+    }
+    return info;
+  }
+  
+  Object merge(Object source, Object dest, Set<String> exclude, final boolean metrics) {
     if (source == null) return dest;
     if (dest == null) {
       if (source instanceof NamedList) {
@@ -383,12 +434,19 @@ public class DebugComponent extends SearchComponent
           }
           return ((Number)source).longValue() + ((Number)dest).longValue();
         }
+        else if (dest instanceof Metric) {
+          ((Metric) dest).record(((Number)source).longValue());
+          return dest;
+        }
         // fall through
       } else if (source instanceof String) {
         if (source.equals(dest)) {
           return dest;
         }
         // fall through
+      } else if (source instanceof Metric && dest instanceof Metric) {
+        ((Metric) dest).add(((Metric) source));
+        return dest;
       }
     }
 
@@ -405,6 +463,12 @@ public class DebugComponent extends SearchComponent
         Object sval = sl.getVal(i);
         int didx = -1;
 
+        if (metrics == true && sval != null && sval instanceof Number) {
+            Metric mm = new Metric();
+            mm.record(((Number)sval).longValue());
+            sval = mm;
+        }
+        
         // optimize case where elements are in same position
         if (i < dl.size()) {
           String dkey = dl.getName(i);
@@ -418,9 +482,9 @@ public class DebugComponent extends SearchComponent
         }
 
         if (didx == -1) {
-          tmp.add(skey, merge(sval, null, null));
+          tmp.add(skey, merge(sval, null, null, metrics));
         } else {
-          dl.setVal(didx, merge(sval, dl.getVal(didx), null));
+          dl.setVal(didx, merge(sval, dl.getVal(didx), null, metrics));
         }
       }
       dl.addAll(tmp);
