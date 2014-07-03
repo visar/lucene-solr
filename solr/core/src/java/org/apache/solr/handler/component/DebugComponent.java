@@ -263,6 +263,11 @@ public class DebugComponent extends SearchComponent
         elapsedTime.record(srsp.getSolrResponse().getElapsedTime()); 
         takeWaitingTime.record(srsp.getTakeWaitingTime());            
 
+        if (srsp.getException() != null) {
+          // can't expect the debug content if there was an exception for this request
+          // this should only happen when using shards.tolerant=true
+          continue;
+        }
         NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
         debug = (NamedList)merge(sdebug, debug, EXCLUDE_SET, true);
       }
