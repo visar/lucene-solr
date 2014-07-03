@@ -192,7 +192,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
       if (deletes != null && numDeletes > maxNumToLog) {
         deletes.add("... (" + numDeletes + " deletes)");
       }
-      long elapsed = rsp.getEndTime() - req.getStartTime();
+      long elapsed = (long) req.getRequestTimer().getTime();
 
       sb.append(toLog).append(" 0 ").append(elapsed);
       log.info(sb.toString());
