@@ -163,7 +163,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   public List<SearchComponent> getComponents() {
     return components;
   }
-  
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
@@ -185,8 +184,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
     }
 
-    final RTimer timer = rb.isDebug() ? new RTimer() : null;
-
+    RTimer timer = rb.isDebug() ? req.getRequestTimer() : null;
 
     ShardHandler shardHandler1 = shardHandlerFactory.getShardHandler();
     shardHandler1.checkDistributed(rb);
@@ -227,7 +225,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
           rb.getTimer().stop();
         }
         subt.stop();
-        timer.stop();
 
         // add the timing info
         if (rb.isDebugTimings()) {
@@ -242,8 +239,13 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       }
       rb.finished = new ArrayList<>();
 
+      // TODO: Need to remove stageTiming parameter in favour of debug.timing
       boolean stageTiming = req.getParams().getBool(STAGE_TIMING, false);
-      final RTimer stageTimer = stageTiming ? new RTimer() : null;
+
+      // In case debug.timing was false, and stageTiming was true.
+      if (stageTiming && timer == null) {
+        timer = req.getRequestTimer();
+      }
 
       int nextStage = ResponseBuilder.STAGE_START;
       do {
@@ -251,8 +253,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         nextStage = ResponseBuilder.STAGE_DONE;
 
         RTimer stageSubTimer = null;
-        if (stageTimer != null && rb.stage > ResponseBuilder.STAGE_START) { // dont't bother to time STAGE_START since little happens
-          stageSubTimer = stageTimer.sub("stage" + rb.stage);
+        if (stageTiming && rb.stage > ResponseBuilder.STAGE_START) { // dont't bother to time STAGE_START since little happens
+          stageSubTimer = timer.sub("stage" + rb.stage);
         }
 
         // call all components
@@ -373,9 +375,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         // we are done when the next stage is MAX_VALUE
       } while (nextStage != ResponseBuilder.STAGE_DONE);
 
-      if (stageTimer != null) {
-        stageTimer.stop();
-        rsp.add("stageTiming", stageTimer.asNamedList());
+      if (stageTiming) {
+        rsp.add("stageTiming", timer.asNamedList());
       }
     }
     
@@ -402,7 +403,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         nl.add("maxScore", rb.getResults().docList.maxScore());
       }
       nl.add("shardAddress", rb.shortCircuitedURL);
-      nl.add("time", rsp.getEndTime()-req.getStartTime()); // elapsed time of this request so far
+      nl.add("time", req.getRequestTimer().getTime()); // elapsed time of this request so far
       
       int pos = rb.shortCircuitedURL.indexOf("://");        
       String shardInfoName = pos != -1 ? rb.shortCircuitedURL.substring(pos+3) : rb.shortCircuitedURL;
