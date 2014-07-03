@@ -56,6 +56,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +76,8 @@ public class SolrRequestParsers
   
   public static final String INPUT_ENCODING_KEY = "ie";
   private static final byte[] INPUT_ENCODING_BYTES = INPUT_ENCODING_KEY.getBytes(CHARSET_US_ASCII);
+
+  public static final String REQUEST_TIMER_SERVLET_ATTRIBUTE = "org.apache.solr.RequestTimer";
 
   private final HashMap<String, SolrRequestParser> parsers =
       new HashMap<>();
@@ -135,6 +138,16 @@ public class SolrRequestParsers
     parsers.put( "", standard );
   }
   
+  private static RTimer getRequestTimer(HttpServletRequest req)
+  {
+    final Object reqTimer = req.getAttribute(REQUEST_TIMER_SERVLET_ATTRIBUTE);
+    if (reqTimer != null && reqTimer instanceof RTimer) {
+      return ((RTimer) reqTimer);
+    }
+
+    return new RTimer();
+  }
+
   public SolrQueryRequest parse( SolrCore core, String path, HttpServletRequest req ) throws Exception
   {
     SolrRequestParser parser = standard;
@@ -157,6 +170,11 @@ public class SolrRequestParsers
   }
   
   public SolrQueryRequest buildRequestFrom( SolrCore core, SolrParams params, Collection<ContentStream> streams ) throws Exception
+  {
+    return buildRequestFrom( core, params, streams, new RTimer() );
+  }
+
+  private SolrQueryRequest buildRequestFrom( SolrCore core, SolrParams params, Collection<ContentStream> streams, RTimer requestTimer ) throws Exception
   {
     // The content type will be applied to all streaming content
     String contentType = params.get( CommonParams.STREAM_CONTENTTYPE );
@@ -203,7 +221,7 @@ public class SolrRequestParsers
       }
     }
     
-    SolrQueryRequestBase q = new SolrQueryRequestBase( core, params ) { };
+    SolrQueryRequestBase q = new SolrQueryRequestBase( core, params, requestTimer ) { };
     if( streams != null && streams.size() > 0 ) {
       q.setContentStreams( streams );
     }
