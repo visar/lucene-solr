@@ -2011,9 +2011,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         log.info(rsp.getToLogAsString(logid));
       }
 
-      if (log.isWarnEnabled()) {
-        final int qtime = (int)(rsp.getEndTime() - req.getStartTime());
-        if (slowQueryThresholdMillis >= 0 && qtime >= slowQueryThresholdMillis) {
+      if (log.isWarnEnabled() && slowQueryThresholdMillis >= 0) {
+        final long qtime = (long) (req.getRequestTimer().getTime());
+        if (qtime >= slowQueryThresholdMillis) {
           log.warn("slow: " + rsp.getToLogAsString(logid));
         }
       }
@@ -2047,7 +2047,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       (SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
     NamedList<Object> responseHeader = rsp.getResponseHeader();
-    final int qtime=(int)(rsp.getEndTime() - req.getStartTime());
+    final long qtime=(long)(req.getRequestTimer().getTime());
     int status = 0;
     Exception exception = rsp.getException();
     if( exception != null ){

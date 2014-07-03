@@ -167,7 +167,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   public List<SearchComponent> getComponents() {
     return components;
   }
-  
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
@@ -189,8 +188,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
     }
 
-    final RTimer timer = rb.isDebug() ? new RTimer() : null;
-
+    final RTimer timer = rb.isDebug() ? req.getRequestTimer() : null;
 
     ShardHandler shardHandler1 = shardHandlerFactory.getShardHandler();
     shardHandler1.checkDistributed(rb);
@@ -236,7 +234,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
             rb.getTimer().stop();
           }
           subt.stop();
-          timer.stop();
 
           // add the timing info
           if (rb.isDebugTimings()) {
@@ -383,7 +380,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         nl.add("maxScore", rb.getResults().docList.maxScore());
       }
       nl.add("shardAddress", rb.shortCircuitedURL);
-      nl.add("time", rsp.getEndTime()-req.getStartTime()); // elapsed time of this request so far
+      nl.add("time", req.getRequestTimer().getTime()); // elapsed time of this request so far
       
       int pos = rb.shortCircuitedURL.indexOf("://");        
       String shardInfoName = pos != -1 ? rb.shortCircuitedURL.substring(pos+3) : rb.shortCircuitedURL;
