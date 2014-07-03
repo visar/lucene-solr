@@ -325,6 +325,11 @@ public class DebugComponent extends SearchComponent
 
       for (ShardRequest sreq : rb.finished) {
         for (ShardResponse srsp : sreq.responses) {
+          if (srsp.getException() != null) {
+            // can't expect the debug content if there was an exception for this request
+            // this should only happen when using shards.tolerant=true
+            continue;
+          }
           NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
           info = (NamedList)merge(sdebug, info, EXCLUDE_SET, false);
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
@@ -376,6 +381,10 @@ public class DebugComponent extends SearchComponent
 
   private NamedList<Object> getTrackResponse(ShardResponse shardResponse) {
     NamedList<Object> namedList = new SimpleOrderedMap<>();
+    if (shardResponse.getException() != null) {
+      namedList.add("Exception", shardResponse.getException().getMessage());
+      return namedList;
+    }
     namedList.add("shardAddress", shardResponse.getShardAddress());
     NamedList<Object> responseNL = shardResponse.getSolrResponse().getResponse();
     @SuppressWarnings("unchecked")
