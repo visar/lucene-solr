@@ -66,10 +66,10 @@ public abstract class IntervalTestBase extends LuceneTestCase {
         Assert.assertTrue(expectation, matchIt.hasNext());
         Match match = matchIt.next();
         System.out.println(match);
-        Assert.assertEquals("Incorrect docid", docid, match.docid);
-        Assert.assertEquals("Incorrect field match", docMatches[j], match.field);
-        Assert.assertEquals("Incorrect match start position", docMatches[j + 1], match.start);
-        Assert.assertEquals("Incorrect match end position", docMatches[j + 2], match.end);
+        Assert.assertEquals("Incorrect docid for match " + match.toString(), docid, match.docid);
+        Assert.assertEquals("Incorrect field match for doc " + docid, docMatches[j], match.field);
+        Assert.assertEquals("Incorrect match start position for doc " + docid, docMatches[j + 1], match.start);
+        Assert.assertEquals("Incorrect match end position for doc " + docid, docMatches[j + 2], match.end);
       }
     }
 
@@ -100,9 +100,9 @@ public abstract class IntervalTestBase extends LuceneTestCase {
         Assert.assertTrue(expectation, matchIt.hasNext());
         Match match = matchIt.next();
         System.err.println(match);
-        Assert.assertEquals("Incorrect docid", match.docid, docid);
-        Assert.assertEquals("Incorrect match offset", docMatches[j], match.startOffset);
-        Assert.assertEquals("Incorrect match end offset", docMatches[j + 1], match.endOffset);
+        Assert.assertEquals("Incorrect docid for match " + match.toString(), docid, match.docid);
+        Assert.assertEquals("Incorrect match offset for doc " + docid, docMatches[j], match.startOffset);
+        Assert.assertEquals("Incorrect match end offset for doc " + docid, docMatches[j + 1], match.endOffset);
       }
     }
     Assert.assertFalse("Unexpected matches!", matchIt.hasNext());
@@ -134,7 +134,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
         Assert.assertTrue(expectation, matchIt.hasNext());
         Match match = matchIt.next();
         System.out.println(match);
-        Assert.assertEquals("Incorrect docid", docid, match.docid);
+        Assert.assertEquals("Incorrect docid for match " + match.toString(), docid, match.docid);
         Assert.assertEquals("Incorrect match start position for doc " + docid, docMatches[j], match.start);
         Assert.assertEquals("Incorrect match end position for doc " + docid, docMatches[j + 1], match.end);
       }
