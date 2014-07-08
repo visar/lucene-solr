@@ -115,7 +115,14 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
       CloudSolrServer client, Replica replica, String shard)
       throws SolrServerException, IOException, InterruptedException {
     Map m = makeMap("collection", COLL_NAME, "action", DELETEREPLICA, "shard",
-        shard, "replica", replica.getName());
+        shard, "replica", replica.getName(), "core", replica.get("core"));
+    if (random().nextBoolean()) {
+      if (random().nextBoolean()) {
+        m.remove("replica");
+      } else {
+        m.remove("core");
+      }
+    }
     SolrParams params = new MapSolrParams(m);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");

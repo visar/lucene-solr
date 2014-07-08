@@ -89,6 +89,7 @@ import java.util.concurrent.TimeUnit;
 import static org.apache.solr.cloud.Assign.Node;
 import static org.apache.solr.cloud.Assign.getNodesForNewShard;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
@@ -748,23 +749,46 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   }
 
   private void deleteReplica(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
-    checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP,REPLICA_PROP);
+    checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP);
     String collectionName = message.getStr(COLLECTION_PROP);
     String shard = message.getStr(SHARD_ID_PROP);
     String replicaName = message.getStr(REPLICA_PROP);
+    String coreName = message.getStr(CORE_NAME_PROP);
+    if(replicaName==null && coreName==null){
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Neither "+REPLICA_PROP+" nor "+CORE_NAME_PROP+" specified.");
+    }
     DocCollection coll = clusterState.getCollection(collectionName);
     Slice slice = coll.getSlice(shard);
     if(slice==null){
       throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid shard name : "+shard+" in collection : "+ collectionName);
     }
-    Replica replica = slice.getReplica(replicaName);
-    if(replica == null){
-      ArrayList<String> l = new ArrayList<>();
-      for (Replica r : slice.getReplicas()) l.add(r.getName());
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid replica : " + replicaName + " in shard/collection : "
-          + shard + "/"+ collectionName + " available replicas are "+ StrUtils.join(l,','));
-    }
 
+    Replica replica = null;
+    {
+      ArrayList<String> replicaNames = new ArrayList<>();
+      ArrayList<String> coreNames = new ArrayList<>();
+      for (Replica r : slice.getReplicas()) {
+        
+        final String rN = r.getName();
+        final String cN = r.getStr(CORE_NAME_PROP);
+
+        replicaNames.add(rN);
+        coreNames.add(cN);
+        
+        if ((replicaName == null || replicaName.equals(rN)) &&
+            (coreName == null || coreName.equals(cN))) {
+          replica = r;
+          break;
+        }
+      }
+      if(replica == null){
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid replica="+replicaName+" core="+coreName
+            + " combination for shard="+shard+" collection="+collectionName + " available are:"
+            + " replicas="+ StrUtils.join(replicaNames,',')
+            + " cores="+StrUtils.join(coreNames,','));
+      }
+    }
+    
     String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
     
