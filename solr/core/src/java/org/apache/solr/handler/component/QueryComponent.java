@@ -39,13 +39,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CursorMarkParams;
-import org.apache.solr.common.params.GroupParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.MoreLikeThisParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -992,7 +986,9 @@ public class QueryComponent extends SearchComponent
       populateNextCursorMarkFromMergedShards(rb);
 
       if (partialResults) {
-        rb.rsp.getResponseHeader().add( "partialResults", Boolean.TRUE );
+        if(rb.rsp.getResponseHeader().get("partialResults") == null) {
+          rb.rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
+        }
       }
   }
 
@@ -1156,6 +1152,28 @@ public class QueryComponent extends SearchComponent
       boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
 
       for (ShardResponse srsp : sreq.responses) {
+        if (srsp.getException() != null) {
+          // Don't try to get the documents if there was an exception in the shard
+          if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
+            @SuppressWarnings("unchecked")
+            NamedList<Object> shardInfo = (NamedList<Object>) rb.rsp.getValues().get(ShardParams.SHARDS_INFO);
+            @SuppressWarnings("unchecked")
+            SimpleOrderedMap<Object> nl = (SimpleOrderedMap<Object>) shardInfo.get(srsp.getShard());
+            if (nl.get("error") == null) {
+              // Add the error to the shards info section if it wasn't added before
+              Throwable t = srsp.getException();
+              if(t instanceof SolrServerException) {
+                t = ((SolrServerException)t).getCause();
+              }
+              nl.add("error", t.toString() );
+              StringWriter trace = new StringWriter();
+              t.printStackTrace(new PrintWriter(trace));
+              nl.add("trace", trace.toString() );
+            }
+          }
+          
+          continue;
+        }
         SolrDocumentList docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
 
         for (SolrDocument doc : docs) {
