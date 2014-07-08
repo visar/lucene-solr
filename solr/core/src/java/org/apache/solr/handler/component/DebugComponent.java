@@ -366,7 +366,7 @@ public class DebugComponent extends SearchComponent
       }
 
       if (rb.isDebugResults()) {
-        explain = SolrPluginUtils.removeNulls(new SimpleOrderedMap<>(arr));
+         explain = SolrPluginUtils.removeNulls(arr, new SimpleOrderedMap<>());
       }
 
       if (!hasGetDebugResponses) {
