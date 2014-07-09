@@ -489,9 +489,14 @@ public class CollectionsHandler extends RequestHandlerBase {
 
   private void handleRemoveReplica(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.info("Remove replica: " + req.getParamString());
-    req.getParams().required().check(COLLECTION_PROP, SHARD_ID_PROP, "replica");
+    if (req.getParams().get("replica") == null &&
+        req.getParams().get("core") == null) {
+      log.error("Must specifiy replica and/or core to delete a replica.");
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Must specifiy replica and/or core to delete a replica.");
+    }
     Map<String, Object> map = makeMap(QUEUE_OPERATION, DELETEREPLICA);
-    copyIfNotNull(req.getParams(),map,COLLECTION_PROP,SHARD_ID_PROP,"replica", ASYNC);
+    copyIfNotNull(req.getParams(),map,COLLECTION_PROP,SHARD_ID_PROP,"replica","core",ASYNC);
     ZkNodeProps m = new ZkNodeProps(map);
     handleResponse(DELETEREPLICA, m, rsp);
   }
