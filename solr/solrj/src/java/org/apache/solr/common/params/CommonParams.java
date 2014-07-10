@@ -110,6 +110,10 @@ public interface CommonParams {
    */
   public static final String TIMING = "timing";
   /**
+   * {@link #DEBUG} value indicating an interest in debug output related to raw timing
+   */
+  public static final String RAW_TIMING = "rawtiming";
+  /**
    * {@link #DEBUG} value indicating an interest in debug output related to the results (explains)
    */
   public static final String RESULTS = "results";

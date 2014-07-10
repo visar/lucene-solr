@@ -228,6 +228,9 @@ public class SolrPluginUtils {
           //still might add others
         } else if (params[i].equals(CommonParams.TIMING)){
           rb.setDebugTimings(true);
+        } else if (params[i].equals(CommonParams.RAW_TIMING)){
+          rb.setDebugTimings(true); // raw timings implies timings
+          rb.setDebugRawTimings(true);
         } else if (params[i].equals(CommonParams.QUERY)){
           rb.setDebugQuery(true);
         } else if (params[i].equals(CommonParams.RESULTS)){
