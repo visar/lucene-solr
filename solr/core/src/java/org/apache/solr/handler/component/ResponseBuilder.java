@@ -66,7 +66,7 @@ public class ResponseBuilder
   private boolean needDocSet = false;
   private int fieldFlags = 0;
   //private boolean debug = false;
-  private boolean debugTimings, debugQuery, debugResults, debugTrack;
+  private boolean debugTimings, debugRawTimings, debugQuery, debugResults, debugTrack;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -220,6 +220,7 @@ public class ResponseBuilder
   //-------------------------------------------------------------------------
 
   public boolean isDebug() {
+    // debugRawTimings deliberately not included
     return debugQuery || debugTimings || debugResults || debugTrack;
   }
 
@@ -228,12 +229,14 @@ public class ResponseBuilder
    * @return true if all debugging options are on
    */
   public boolean isDebugAll(){
+    // debugRawTimings deliberately not included
     return debugQuery && debugTimings && debugResults && debugTrack;
   }
 
   public void setDebug(boolean dbg){
     debugQuery = dbg;
     debugTimings = dbg;
+    // debugRawTimings deliberately left unchanged
     debugResults = dbg;
     debugTrack = dbg;
   }
@@ -272,6 +275,14 @@ public class ResponseBuilder
 
   public void setDebugTimings(boolean debugTimings) {
     this.debugTimings = debugTimings;
+  }
+
+  public boolean isDebugRawTimings() {
+    return debugRawTimings;
+  }
+
+  public void setDebugRawTimings(boolean debugRawTimings) {
+    this.debugRawTimings = debugRawTimings;
   }
 
   public boolean isDebugQuery() {
