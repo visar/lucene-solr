@@ -281,7 +281,7 @@ public class DebugComponent extends SearchComponent
           continue;
         }
         NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
-        debug = (NamedList)merge(sdebug, debug, EXCLUDE_SET, shardAddress);
+        debug = (NamedList)merge(sdebug, debug, EXCLUDE_SET, true, shardAddress);
       }
       
       if (debug != null) {
@@ -348,7 +348,7 @@ public class DebugComponent extends SearchComponent
             continue;
           }
           NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
-          info = (NamedList)merge(sdebug, info, EXCLUDE_SET, null);
+          info = (NamedList)merge(sdebug, info, EXCLUDE_SET, false, null);
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
             hasGetDebugResponses = true;
             if (rb.isDebugResults()) {
@@ -436,7 +436,7 @@ public class DebugComponent extends SearchComponent
     return info;
   }
   
-  Object merge(Object source, Object dest, Set<String> exclude, final String shardAddress) {
+  Object merge(Object source, Object dest, Set<String> exclude, final boolean metrics, final String shardAddress) {
     if (source == null) return dest;
     if (dest == null) {
       if (source instanceof NamedList) {
@@ -489,7 +489,7 @@ public class DebugComponent extends SearchComponent
         Object sval = sl.getVal(i);
         int didx = -1;
 
-        if (shardAddress != null && sval != null && sval instanceof Number) {
+        if (metrics == true && sval != null && sval instanceof Number) {
             Metric mm = new Metric();
             mm.record(shardAddress, ((Number)sval).longValue());
             sval = mm;
@@ -508,9 +508,9 @@ public class DebugComponent extends SearchComponent
         }
 
         if (didx == -1) {
-          tmp.add(skey, merge(sval, null, null, shardAddress));
+          tmp.add(skey, merge(sval, null, null, metrics, shardAddress));
         } else {
-          dl.setVal(didx, merge(sval, dl.getVal(didx), null, shardAddress));
+          dl.setVal(didx, merge(sval, dl.getVal(didx), null, metrics, shardAddress));
         }
       }
       dl.addAll(tmp);
