@@ -231,6 +231,12 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     private Interval current;
     private Set<Match> matches = new TreeSet<Match>();
     private int hitCount;
+    private int docBase = -1;
+
+    @Override
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+      docBase = context.docBase;
+    }
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {
@@ -258,12 +264,12 @@ public abstract class IntervalTestBase extends LuceneTestCase {
 
     @Override
     public void collectLeafPosition(Scorer scorer, Interval interval, int docID) {
-      matches.add(new Match(docID, interval, false));
+      matches.add(new Match(docID + docBase, interval, false));
     }
 
     @Override
     public void collectComposite(Scorer scorer, Interval interval, int docID) {
-      matches.add(new Match(docID, interval, true));
+      matches.add(new Match(docID + docBase, interval, true));
     }
 
     @Override
