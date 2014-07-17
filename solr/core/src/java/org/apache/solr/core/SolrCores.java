@@ -154,7 +154,7 @@ class SolrCores {
         try {
           core.close();
           if (!core.isClosed()) {
-            CoreContainer.log.info("SolrCores.close - core={} is not yet closed", core);
+            CoreContainer.log.info("SolrCores.close - core {} is not yet closed", core.getName());
             unclosedCoreList.add(core);
           }
         } catch (Throwable e) {
@@ -171,9 +171,13 @@ class SolrCores {
     } while ((!coreList.isEmpty() || !unclosedCoreList.isEmpty()) && (null == timeoutNanoSeconds || elapsedNanoSeconds < timeoutNanoSeconds.longValue()));
 
     if (!unclosedCoreList.isEmpty()) {
+      Collection<String> unclosedCoreListNames = new ArrayList<>();
+      for (SolrCore core : unclosedCoreList) {
+        unclosedCoreListNames.add(core.getName());
+      }
       final long elapsedSeconds = TimeUnit.SECONDS.convert(elapsedNanoSeconds, TimeUnit.NANOSECONDS);
-      CoreContainer.log.warn("SolrCores.close - unclosedCoreList={} elapsedSeconds={} timeoutSeconds={}",
-          unclosedCoreList, elapsedSeconds, timeoutSeconds);
+      CoreContainer.log.warn("SolrCores.close - unclosedCoreListNames={} elapsedSeconds={} timeoutSeconds={}",
+          unclosedCoreListNames, elapsedSeconds, timeoutSeconds);
     }
   }
 
