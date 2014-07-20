@@ -353,18 +353,17 @@ public  class LeaderElector {
         }
         return;
       }
-      try {
-        // am I the next leader?
-        checkIfIamLeader(seq, context, true);
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("", e);
-      } catch (IOException e) {
-        log.warn("", e);
-      } catch (Exception e) {
-        log.warn("", e);
-      }
+      new Thread("LeaderCheck-") {
+        @Override
+        public void run () {
+          try {
+            // am I the next leader?
+            checkIfIamLeader(seq, context, true);
+          } catch (Exception e) {
+            log.warn("", e);
+          }
+        }
+      }.start();
     }
   }
   
