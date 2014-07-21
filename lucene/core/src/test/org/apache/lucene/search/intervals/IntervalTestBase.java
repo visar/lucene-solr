@@ -234,11 +234,6 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     private int docBase = -1;
 
     @Override
-    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
-      docBase = context.docBase;
-    }
-
-    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.intervals = scorer.intervals(true);
     }
@@ -255,6 +250,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
+      docBase = context.docBase;
     }
 
     @Override
