@@ -668,7 +668,7 @@ public class CoreContainer {
 
     core.unloadOnClose(deleteIndexDir, deleteDataDir, deleteInstanceDir);
     if (close)
-      core.close();
+      core.closeAndWait();
 
     if (zkSys.getZkController() != null) {
       try {
