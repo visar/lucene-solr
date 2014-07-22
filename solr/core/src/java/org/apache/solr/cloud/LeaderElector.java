@@ -33,7 +33,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -316,7 +315,7 @@ public  class LeaderElector {
     return seq;
   }
 
-  private class ElectionWatcher implements Watcher {
+  private class ElectionWatcher implements SolrZkClient.AsyncWatcher {
     final String myNode,watchedNode;
     final int seq;
     final ElectionContext context;
@@ -353,20 +352,15 @@ public  class LeaderElector {
         }
         return;
       }
-      new Thread("LeaderCheck-") {
-        @Override
-        public void run () {
-          try {
-            // am I the next leader?
-            checkIfIamLeader(seq, context, true);
-          } catch (Exception e) {
-            log.warn("", e);
-          }
-        }
-      }.start();
+      try {
+        // am I the next leader?
+        checkIfIamLeader(seq, context, true);
+      } catch (Exception e) {
+        log.warn("", e);
+      }
     }
   }
-  
+
   /**
    * Set up any ZooKeeper nodes needed for leader election.
    */
@@ -401,4 +395,5 @@ public  class LeaderElector {
     this.context = ctx;
     joinElection(ctx, true, joinAtHead);
   }
+
 }
