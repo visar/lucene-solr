@@ -723,7 +723,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           core.getSolrCoreState().cancelRecovery();
         }
         if (closeCore) {
-          core.close();
+          core.closeAndWait();
         }
         
         if (coreContainer.getZkController() != null) {
