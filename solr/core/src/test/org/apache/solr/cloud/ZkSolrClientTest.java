@@ -210,7 +210,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
       for (int i = 1; i <= numColls; i ++) {
         String collPath = "/collections/collection" + i;
         zkClient.makePath(collPath, true);
-        zkClient.getChildren(collPath, new SolrZkClient.AsyncWatcher() {
+        zkClient.getChildren(collPath, new Watcher() {
           @Override
           public void process(WatchedEvent event) {
             latch.countDown();

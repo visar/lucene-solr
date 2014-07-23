@@ -83,9 +83,6 @@ public class SolrZkClient {
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
   private int zkClientTimeout;
 
-  public interface AsyncWatcher extends Watcher {
-  }
-
   public int getZkClientTimeout() {
     return zkClientTimeout;
   }
@@ -196,11 +193,7 @@ public class SolrZkClient {
   private Watcher wrapWatcher (final Watcher watcher) {
     if (watcher == null) return watcher;
 
-    boolean asyncWatcher = (watcher instanceof AsyncWatcher);
-    log.debug("Wrapping watcher: Async = " + asyncWatcher + " (Class: " + watcher.getClass().getName() + ")");
-    if (! asyncWatcher) return watcher;
-
-    // asynchronous watcher, so queue the event
+    // wrap the watcher so that it doesn't fire off ZK's event queue
     return new Watcher() {
       @Override
       public void process(final WatchedEvent event) {

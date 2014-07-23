@@ -316,7 +316,7 @@ public  class LeaderElector {
     return seq;
   }
 
-  private class ElectionWatcher implements SolrZkClient.AsyncWatcher {
+  private class ElectionWatcher implements Watcher {
     final String myNode,watchedNode;
     final int seq;
     final ElectionContext context;
