@@ -195,10 +195,10 @@ public class SolrZkClient {
 
   private Watcher wrapWatcher (final Watcher watcher) {
     if (watcher == null) return watcher;
-    boolean asyncWatcher = (watcher instanceof AsyncWatcher);
-    log.debug("Watcher: Async = " + asyncWatcher + " (Class: " + watcher.getClass().getName() + ")");
 
-    if (! (watcher instanceof AsyncWatcher)) return watcher;
+    boolean asyncWatcher = (watcher instanceof AsyncWatcher);
+    log.debug("Wrapping watcher: Async = " + asyncWatcher + " (Class: " + watcher.getClass().getName() + ")");
+    if (! asyncWatcher) return watcher;
 
     // asynchronous watcher, so queue the event
     return new Watcher() {

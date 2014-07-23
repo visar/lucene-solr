@@ -258,7 +258,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     throw new RuntimeException("Could not get leader props");
   }
 
-  private static void startandJoinElection (List<ClientThread> threads) throws InterruptedException {
+  private static void startAndJoinElection (List<ClientThread> threads) throws InterruptedException {
     for (Thread thread : threads) {
       thread.start();
     }
@@ -287,7 +287,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       threads.add(thread);
     }
     try {
-      startandJoinElection(threads);
+      startAndJoinElection(threads);
       
       int leaderThread = getLeaderThread();
       
@@ -359,7 +359,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         threads.add(thread);
         replica1s.add(thread);
       }
-      startandJoinElection(replica1s);
+      startAndJoinElection(replica1s);
       log.info("First replicas brought up and registered");
 
       // bring up second in line
@@ -370,7 +370,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         threads.add(thread);
         replica2s.add(thread);
       }
-      startandJoinElection(replica2s);
+      startAndJoinElection(replica2s);
       log.info("Second replicas brought up and registered");
 
       // disconnect the leaders
@@ -462,10 +462,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             }
             try {
               threads.get(j).close();
-            } catch (InterruptedException e) {
-              throw e;
             } catch (Exception e) {
-              
             }
 
             Thread.sleep(10);
@@ -485,7 +482,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             int j;
             j = random().nextInt(threads.size());
             try {
-              threads.get(j).zkClient.getSolrZooKeeper().pauseCnxn(
+              threads.get(j).es.zkClient.getSolrZooKeeper().pauseCnxn(
                   ZkTestServer.TICK_TIME * 2);
             } catch (Exception e) {
               e.printStackTrace();
@@ -523,7 +520,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     
     // cleanup any threads still running
     for (ClientThread thread : threads) {
-      thread.zkClient.getSolrZooKeeper().close();
+      thread.es.zkClient.getSolrZooKeeper().close();
       thread.close();
     }
     
