@@ -194,12 +194,17 @@ public class SolrZkClient {
   }
 
   private Watcher wrapWatcher (final Watcher watcher) {
+    if (watcher == null) return watcher;
+    boolean asyncWatcher = (watcher instanceof AsyncWatcher);
+    log.debug("Watcher: Async = " + asyncWatcher + " (Class: " + watcher.getClass().getName() + ")");
+
     if (! (watcher instanceof AsyncWatcher)) return watcher;
 
     // asynchronous watcher, so queue the event
     return new Watcher() {
       @Override
       public void process(final WatchedEvent event) {
+        log.debug("Submitting job to respond to event " + event);
         zkCallbackExecutor.submit(new Runnable () {
           @Override
           public void run () {
