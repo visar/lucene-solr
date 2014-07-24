@@ -59,7 +59,7 @@ public class TermsQueryBuilder implements QueryBuilder {
 
     termBuilder.extractTerms(tp, e);
 
-    return tp.bq;
+    return ((tp.bq.clauses().size() == 1) ? tp.bq.clauses().iterator().next().getQuery() : tp.bq);
   }
 
 }

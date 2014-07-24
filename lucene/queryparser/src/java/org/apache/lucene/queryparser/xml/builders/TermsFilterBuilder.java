@@ -2,6 +2,7 @@ package org.apache.lucene.queryparser.xml.builders;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.queries.TermFilter;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queryparser.xml.FilterBuilder;
 import org.apache.lucene.queryparser.xml.TermBuilder;
@@ -58,6 +59,6 @@ public class TermsFilterBuilder implements FilterBuilder {
 
     termBuilder.extractTerms(tp, e);
 
-    return new TermsFilter(tp.terms);
+    return ((tp.terms.size() == 1)? new TermFilter(tp.terms.iterator().next()) : new TermsFilter(tp.terms));
   }
 }
