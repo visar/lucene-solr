@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
@@ -54,12 +55,25 @@ public class TestParser extends LuceneTestCase {
   private static Directory dir;
   private static IndexReader reader;
   private static IndexSearcher searcher;
-
+  private static String ANALYSER_PARAM     = "tests.analyser";
+  private static String DEFAULT_ANALYSER   = "mock";
+  private static String STANDARD_ANALYSER  = "standard";
+ 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
-    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
-    //initialize the parser
+    String analyserToUse = System.getProperty(ANALYSER_PARAM, DEFAULT_ANALYSER);
+    Analyzer analyzer =  null;
+    if (analyserToUse.equals(STANDARD_ANALYSER))
+    {
+      analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT); 
+    }
+    else
+    {
+      assertEquals(DEFAULT_ANALYSER, analyserToUse);
+      // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
+      analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
+    }
+    
     builder = new CorePlusExtensionsParser("contents", analyzer);
 
     BufferedReader d = new BufferedReader(new InputStreamReader(
@@ -109,6 +123,16 @@ public class TestParser extends LuceneTestCase {
     Query q = parse("TermsQueryWithTermElement.xml");
     dumpResults("TermsQuery", q, 5);
   }
+  
+  public void testTermsQueryWithSingleTerm() throws ParserException, IOException {
+    Query q = parse("TermsQuerySingleTerm.xml");
+    dumpResults("testTermsQueryWithSingleTerm", q, 5);
+  }
+  
+  public void testTermsQueryWithStopwords() throws ParserException, IOException {
+    Query q = parse("TermsQueryStopwords.xml");
+    dumpResults("testTermsQueryWithStopwords", q, 5);
+    }
 
   public void testBooleanQueryXML() throws ParserException, IOException {
     Query q = parse("BooleanQuery.xml");
@@ -165,7 +189,17 @@ public class TestParser extends LuceneTestCase {
     Query q = parse("TermsFilterQuery.xml");
     dumpResults("Terms Filter", q, 5);
   }
-
+  
+  public void testTermsFilterWithSingleTerm() throws Exception {
+    Query q = parse("TermsFilterQueryWithSingleTerm.xml");
+    dumpResults("TermsFilter With SingleTerm", q, 5);
+  }
+  
+  public void testTermsFilterQueryWithStopword() throws Exception {
+    Query q = parse("TermsFilterQueryStopwords.xml");
+    dumpResults("TermsFilter with Stopword", q, 5);
+  }
+  
   public void testBoostingTermQueryXML() throws Exception {
     Query q = parse("BoostingTermQuery.xml");
     dumpResults("BoostingTermQuery", q, 5);
