@@ -77,7 +77,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   private String scheme = null;
 
-  private final Random r = new Random();
+  public final Random r = new Random();
 
   // URL scheme to be used in distributed search.
   static final String INIT_URL_SCHEME = "urlScheme";
@@ -218,14 +218,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     for (int i=0; i<urls.size(); i++) {
       urls.set(i, buildUrl(urls.get(i)));
     }
-
-    //
-    // Shuffle the list instead of use round-robin by default.
-    // This prevents accidental synchronization where multiple shards could get in sync
-    // and query the same replica at the same time.
-    //
-    if (urls.size() > 1)
-      Collections.shuffle(urls, r);
 
     return urls;
   }

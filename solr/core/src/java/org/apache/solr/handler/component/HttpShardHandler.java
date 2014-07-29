@@ -43,11 +43,15 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -248,6 +252,18 @@ public class HttpShardHandler extends ShardHandler {
     }
   }
 
+  private class ShuffledLiveNodesListReplicaComparator implements Comparator<Replica> {
+    private final List<String> shuffledLiveNodesList;
+    ShuffledLiveNodesListReplicaComparator(Set<String> liveNodes, Random r) {
+      shuffledLiveNodesList = new ArrayList<String>(liveNodes);
+      Collections.shuffle(shuffledLiveNodesList, r);
+    }
+    @Override
+    public int compare(Replica lhs, Replica rhs) {
+      return (shuffledLiveNodesList.indexOf(lhs.getNodeName()) - shuffledLiveNodesList.indexOf(rhs.getNodeName()));
+    }          
+  };
+  
   @Override
   public void checkDistributed(ResponseBuilder rb) {
     SolrQueryRequest req = rb.req;
@@ -356,6 +372,10 @@ public class HttpShardHandler extends ShardHandler {
           // We shouldn't need to do anything to handle "shard.rows" since it was previously meant to be an optimization?
         }
 
+        ShuffledLiveNodesListReplicaComparator shuffledLiveNodesListReplicaCompare = null;
+        if (params.getBool("nodeAffinity", false)) {
+          shuffledLiveNodesListReplicaCompare = new ShuffledLiveNodesListReplicaComparator(clusterState.getLiveNodes(), httpShardHandlerFactory.r);
+        }
 
         for (int i=0; i<rb.shards.length; i++) {
           if (rb.shards[i] == null) {
@@ -375,15 +395,27 @@ public class HttpShardHandler extends ShardHandler {
               // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such shard: " + sliceName);
             }
 
-            Map<String, Replica> sliceShards = slice.getReplicasMap();
+            final Collection<Replica> replicas = slice.getReplicasMap().values();
+            final List<Replica> live_replicas = new ArrayList<>(replicas.size());
 
-            // For now, recreate the | delimited list of equivalent servers
-            StringBuilder sliceShardsStr = new StringBuilder();
-            boolean first = true;
-            for (Replica replica : sliceShards.values()) {
+            for (Replica replica : replicas) {
               if (!clusterState.liveNodesContain(replica.getNodeName())
                   || !replica.getStr(ZkStateReader.STATE_PROP).equals(
                       ZkStateReader.ACTIVE)) continue;
+              live_replicas.add( replica );
+            }
+
+            if (null != shuffledLiveNodesListReplicaCompare) {
+              Collections.sort(live_replicas, shuffledLiveNodesListReplicaCompare);
+              
+            } else {
+              Collections.shuffle(live_replicas, httpShardHandlerFactory.r);              
+            }
+            
+            // For now, recreate the | delimited list of equivalent servers
+            StringBuilder sliceShardsStr = new StringBuilder();
+            boolean first = true;
+            for (Replica replica : live_replicas) {
               if (first) {
                 first = false;
               } else {
