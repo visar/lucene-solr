@@ -301,18 +301,12 @@ public  class LeaderElector {
       try {
         // am I the next leader?
         checkIfIamLeader(seq, context, true);
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("", e);
-      } catch (IOException e) {
-        log.warn("", e);
       } catch (Exception e) {
         log.warn("", e);
       }
     }
   }
-  
+
   /**
    * Set up any ZooKeeper nodes needed for leader election.
    */
@@ -343,4 +337,5 @@ public  class LeaderElector {
     if(watcher!= null) watcher.cancel(context.leaderSeqPath);
     joinElection(context, true);
   }
+
 }
