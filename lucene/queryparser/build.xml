@@ -33,6 +33,11 @@
     <path refid="base.classpath"/>
   </path>
 
+  <path id="test.classpath">
+  	<pathelement path="${analyzers-common.jar}"/>
+    <path refid="test.base.classpath"/>
+  </path>
+
   <target name="compile-core" depends="jar-queries,jar-sandbox,common.compile-core"/>
 
   <target name="javadocs" depends="javadocs-queries,javadocs-sandbox,compile-core">
