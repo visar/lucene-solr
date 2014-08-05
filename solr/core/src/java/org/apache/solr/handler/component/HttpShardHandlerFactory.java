@@ -66,8 +66,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   protected HttpClient defaultClient;
   private LBHttpSolrServer loadbalancer;
   //default values:
-  int soTimeout = 0; 
-  int connectionTimeout = 0; 
+  int soTimeout = 600000;
+  int connectionTimeout = 60000;
   int maxConnectionsPerHost = 20;
   int maxConnections = 10000;
   int corePoolSize = 0;

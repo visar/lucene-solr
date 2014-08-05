@@ -178,11 +178,11 @@ public abstract class ConfigSolr {
   }
 
   public int getDistributedConnectionTimeout() {
-    return get(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, 0);
+    return get(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, 60000);
   }
 
   public int getDistributedSocketTimeout() {
-    return get(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, 0);
+    return get(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, 600000);
   }
   
   public int getMaxUpdateConnections() {
