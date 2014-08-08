@@ -36,6 +36,9 @@ import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * A distributed queue from zk recipes.
  */
@@ -90,14 +93,8 @@ public class DistributedQueue {
   private TreeMap<Long,String> orderedChildren(Watcher watcher)
       throws KeeperException, InterruptedException {
     TreeMap<Long,String> orderedChildren = new TreeMap<>();
-    
-    List<String> childNames = null;
-    try {
-      childNames = zookeeper.getChildren(dir, watcher, true);
-    } catch (KeeperException.NoNodeException e) {
-      throw e;
-    }
-    
+
+    List<String> childNames = zookeeper.getChildren(dir, watcher, true);
     for (String childName : childNames) {
       try {
         // Check format
@@ -116,7 +113,7 @@ public class DistributedQueue {
     
     return orderedChildren;
   }
-  
+
   /**
    * Return the head of the queue without modifying the queue.
    * 
@@ -214,11 +211,13 @@ public class DistributedQueue {
   
   private class LatchChildWatcher implements Watcher {
     
-    Object lock = new Object();
+    final Object lock;
     private WatchedEvent event = null;
     
-    public LatchChildWatcher() {}
-    
+    public LatchChildWatcher() {
+      this.lock = new Object();
+    }
+
     public LatchChildWatcher(Object lock) {
       this.lock = lock;
     }
@@ -235,6 +234,7 @@ public class DistributedQueue {
     
     public void await(long timeout) throws InterruptedException {
       synchronized (lock) {
+        if (this.event != null) return;
         lock.wait(timeout);
       }
     }
@@ -243,41 +243,71 @@ public class DistributedQueue {
       return event;
     }
   }
-  
+
+  // we avoid creating *many* watches in some cases
+  // by saving the childrenWatcher and the children associated - see SOLR-6336
+  private LatchChildWatcher childrenWatcher;
+  private TreeMap<Long,String> fetchedChildren;
+  private final Object childrenWatcherLock = new Object();
+
+  private Map<Long, String> getChildren(long wait) throws InterruptedException, KeeperException
+  {
+    LatchChildWatcher watcher;
+    TreeMap<Long,String> children;
+    synchronized (childrenWatcherLock) {
+      watcher = childrenWatcher;
+      children = fetchedChildren;
+    }
+
+    if (watcher == null ||  watcher.getWatchedEvent() != null) {
+      watcher = new LatchChildWatcher();
+      while (true) {
+        try {
+          children = orderedChildren(watcher);
+          break;
+        } catch (KeeperException.NoNodeException e) {
+          zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
+          // go back to the loop and try again
+        }
+      }
+      synchronized (childrenWatcherLock) {
+        childrenWatcher = watcher;
+        fetchedChildren = children;
+      }
+    }
+
+    while (true) {
+      if (!children.isEmpty()) break;
+      watcher.await(wait == Long.MAX_VALUE ? DEFAULT_TIMEOUT : wait);
+      if (watcher.getWatchedEvent() != null) {
+        children = orderedChildren(null);
+      }
+      if (wait != Long.MAX_VALUE) break;
+    }
+    return Collections.unmodifiableMap(children);
+  }
+
   /**
    * Removes the head of the queue and returns it, blocks until it succeeds.
    * 
    * @return The former head of the queue
    */
   public byte[] take() throws KeeperException, InterruptedException {
-    TreeMap<Long,String> orderedChildren;
     // Same as for element. Should refactor this.
     TimerContext timer = stats.time(dir + "_take");
     try {
-      while (true) {
-        LatchChildWatcher childWatcher = new LatchChildWatcher();
+      Map<Long, String> orderedChildren = getChildren(Long.MAX_VALUE);
+      for (String headNode : orderedChildren.values()) {
+        String path = dir + "/" + headNode;
         try {
-          orderedChildren = orderedChildren(childWatcher);
+          byte[] data = zookeeper.getData(path, null, null, true);
+          zookeeper.delete(path, -1, true);
+          return data;
         } catch (KeeperException.NoNodeException e) {
-          zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
-          continue;
-        }
-        if (orderedChildren.size() == 0) {
-          childWatcher.await(DEFAULT_TIMEOUT);
-          continue;
-        }
-
-        for (String headNode : orderedChildren.values()) {
-          String path = dir + "/" + headNode;
-          try {
-            byte[] data = zookeeper.getData(path, null, null, true);
-            zookeeper.delete(path, -1, true);
-            return data;
-          } catch (KeeperException.NoNodeException e) {
-            // Another client deleted the node first.
-          }
+          // Another client deleted the node first.
         }
       }
+      return null; // shouldn't really reach here..
     } finally {
       timer.stop();
     }
@@ -427,7 +457,7 @@ public class DistributedQueue {
   public QueueEvent peek(boolean block) throws KeeperException, InterruptedException {
     return peek(block ? Long.MAX_VALUE : 0);
   }
-  
+
   /**
    * Returns the data at the first element of the queue, or null if the queue is
    * empty after wait ms.
@@ -447,35 +477,17 @@ public class DistributedQueue {
         return element();
       }
 
-      TreeMap<Long, String> orderedChildren;
-      boolean waitedEnough = false;
-      while (true) {
-        LatchChildWatcher childWatcher = new LatchChildWatcher();
+      Map<Long, String> orderedChildren = getChildren(wait);
+      for (String headNode : orderedChildren.values()) {
+        String path = dir + "/" + headNode;
         try {
-          orderedChildren = orderedChildren(childWatcher);
+          byte[] data = zookeeper.getData(path, null, null, true);
+          return new QueueEvent(path, data, null);
         } catch (KeeperException.NoNodeException e) {
-          zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
-          continue;
-        }
-        if (waitedEnough) {
-          if (orderedChildren.isEmpty()) return null;
-        }
-        if (orderedChildren.size() == 0) {
-          childWatcher.await(wait == Long.MAX_VALUE ? DEFAULT_TIMEOUT : wait);
-          waitedEnough = wait != Long.MAX_VALUE;
-          continue;
-        }
-
-        for (String headNode : orderedChildren.values()) {
-          String path = dir + "/" + headNode;
-          try {
-            byte[] data = zookeeper.getData(path, null, null, true);
-            return new QueueEvent(path, data, childWatcher.getWatchedEvent());
-          } catch (KeeperException.NoNodeException e) {
-            // Another client deleted the node first.
-          }
+          // Another client deleted the node first.
         }
       }
+      return null;
     } finally {
       time.stop();
     }
