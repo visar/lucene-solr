@@ -36,6 +36,9 @@ import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * A distributed queue from zk recipes.
  */
@@ -90,14 +93,8 @@ public class DistributedQueue {
   private TreeMap<Long,String> orderedChildren(Watcher watcher)
       throws KeeperException, InterruptedException {
     TreeMap<Long,String> orderedChildren = new TreeMap<>();
-    
-    List<String> childNames = null;
-    try {
-      childNames = zookeeper.getChildren(dir, watcher, true);
-    } catch (KeeperException.NoNodeException e) {
-      throw e;
-    }
-    
+
+    List<String> childNames = zookeeper.getChildren(dir, watcher, true);
     for (String childName : childNames) {
       try {
         // Check format
@@ -116,7 +113,7 @@ public class DistributedQueue {
     
     return orderedChildren;
   }
-  
+
   /**
    * Return the head of the queue without modifying the queue.
    * 
@@ -214,11 +211,13 @@ public class DistributedQueue {
   
   private class LatchChildWatcher implements Watcher {
     
-    Object lock = new Object();
+    final Object lock;
     private WatchedEvent event = null;
     
-    public LatchChildWatcher() {}
-    
+    public LatchChildWatcher() {
+      this.lock = new Object();
+    }
+
     public LatchChildWatcher(Object lock) {
       this.lock = lock;
     }
@@ -246,12 +245,20 @@ public class DistributedQueue {
   }
 
   // we avoid creating *many* watches in some cases
-  // by saving the childrenWatcher - see SOLR-6336
-  private volatile LatchChildWatcher childrenWatcher;
-  private TreeMap<Long, String> getChildren(long wait) throws InterruptedException, KeeperException
+  // by saving the childrenWatcher and the children associated - see SOLR-6336
+  private LatchChildWatcher childrenWatcher;
+  private TreeMap<Long,String> fetchedChildren;
+  private final Object childrenWatcherLock = new Object();
+
+  private Map<Long, String> getChildren(long wait) throws InterruptedException, KeeperException
   {
-    LatchChildWatcher watcher = childrenWatcher;
-    TreeMap<Long,String> children = new TreeMap<> ();
+    LatchChildWatcher watcher;
+    TreeMap<Long,String> children;
+    synchronized (childrenWatcherLock) {
+      watcher = childrenWatcher;
+      children = fetchedChildren;
+    }
+
     if (watcher == null ||  watcher.getWatchedEvent() != null) {
       watcher = new LatchChildWatcher();
       while (true) {
@@ -263,7 +270,10 @@ public class DistributedQueue {
           // go back to the loop and try again
         }
       }
-      childrenWatcher = watcher;
+      synchronized (childrenWatcherLock) {
+        childrenWatcher = watcher;
+        fetchedChildren = children;
+      }
     }
 
     while (true) {
@@ -274,7 +284,7 @@ public class DistributedQueue {
       }
       if (wait != Long.MAX_VALUE) break;
     }
-    return children;
+    return Collections.unmodifiableMap(children);
   }
 
   /**
@@ -286,7 +296,7 @@ public class DistributedQueue {
     // Same as for element. Should refactor this.
     TimerContext timer = stats.time(dir + "_take");
     try {
-      TreeMap<Long, String> orderedChildren = getChildren(Long.MAX_VALUE);
+      Map<Long, String> orderedChildren = getChildren(Long.MAX_VALUE);
       for (String headNode : orderedChildren.values()) {
         String path = dir + "/" + headNode;
         try {
@@ -467,7 +477,7 @@ public class DistributedQueue {
         return element();
       }
 
-      TreeMap<Long, String> orderedChildren = getChildren(wait);
+      Map<Long, String> orderedChildren = getChildren(wait);
       for (String headNode : orderedChildren.values()) {
         String path = dir + "/" + headNode;
         try {
