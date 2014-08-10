@@ -220,7 +220,7 @@ public class HdfsUpdateLog extends UpdateLog {
     // non-complete tlogs.
     HdfsUpdateLog.RecentUpdates startingUpdates = getRecentUpdates();
     try {
-      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
+      startingVersions = startingUpdates.getVersions(getNumRecordsToKeep());
       startingOperation = startingUpdates.getLatestOperation();
       
       // populate recent deletes list (since we can't get that info from the
