@@ -124,7 +124,9 @@ public  class LeaderElector {
         return;
       }
       try {
-        zkClient.getData(holdElectionPath + "/" + seqs.get(index), watcher = new ElectionWatcher(context.leaderSeqPath , seq, context) , null, true);
+        String toWatch = holdElectionPath + "/" + seqs.get(index);
+        zkClient.getData(toWatch, watcher = new ElectionWatcher(context.leaderSeqPath , seq, context) , null, true);
+        log.info("Watching path {} to know if I could be the leader", toWatch);
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
       } catch (KeeperException e) {
@@ -220,6 +222,7 @@ public  class LeaderElector {
       try {
         leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
             CreateMode.EPHEMERAL_SEQUENTIAL, false);
+        log.info("Joined leadership election with node: {}", leaderSeqPath);
         context.leaderSeqPath = leaderSeqPath;
         cont = false;
       } catch (ConnectionLossException e) {
