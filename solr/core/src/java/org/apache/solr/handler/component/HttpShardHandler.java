@@ -43,6 +43,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -357,6 +358,8 @@ public class HttpShardHandler extends ShardHandler {
         }
 
 
+        HttpShardHandlerFactory.ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
+        
         for (int i=0; i<rb.shards.length; i++) {
           if (rb.shards[i] == null) {
             if (clusterState == null) {
@@ -375,15 +378,22 @@ public class HttpShardHandler extends ShardHandler {
               // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such shard: " + sliceName);
             }
 
-            Map<String, Replica> sliceShards = slice.getReplicasMap();
+            final Collection<Replica> replicas = slice.getReplicasMap().values();
+            final List<Replica> live_replicas = new ArrayList<>(replicas.size());
 
-            // For now, recreate the | delimited list of equivalent servers
-            StringBuilder sliceShardsStr = new StringBuilder();
-            boolean first = true;
-            for (Replica replica : sliceShards.values()) {
+            for (Replica replica : replicas) {
               if (!clusterState.liveNodesContain(replica.getNodeName())
                   || !replica.getStr(ZkStateReader.STATE_PROP).equals(
                       ZkStateReader.ACTIVE)) continue;
+              live_replicas.add( replica );
+            }
+
+            replicaListTransformer.transform(live_replicas);
+            
+            // For now, recreate the | delimited list of equivalent servers
+            StringBuilder sliceShardsStr = new StringBuilder();
+            boolean first = true;
+            for (Replica replica : live_replicas) {
               if (first) {
                 first = false;
               } else {
