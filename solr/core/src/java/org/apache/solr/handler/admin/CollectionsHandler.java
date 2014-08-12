@@ -496,7 +496,7 @@ public class CollectionsHandler extends RequestHandlerBase {
           "Must specifiy replica and/or core to delete a replica.");
     }
     Map<String, Object> map = makeMap(QUEUE_OPERATION, DELETEREPLICA);
-    copyIfNotNull(req.getParams(),map,COLLECTION_PROP,SHARD_ID_PROP,"replica","core",ASYNC);
+    copyIfNotNull(req.getParams(),map,COLLECTION_PROP,SHARD_ID_PROP,"replica","core",CoreAdminParams.DELETE_INSTANCE_DIR,ASYNC);
     ZkNodeProps m = new ZkNodeProps(map);
     handleResponse(DELETEREPLICA, m, rsp);
   }

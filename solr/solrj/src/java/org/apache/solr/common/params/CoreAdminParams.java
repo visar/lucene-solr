@@ -109,6 +109,7 @@ public abstract class CoreAdminParams
   public static final String DELETE_DATA_DIR = "deleteDataDir";
 
   public static final String DELETE_INSTANCE_DIR = "deleteInstanceDir";
+  public static final boolean DELETE_INSTANCE_DIR_DEFAULT_VALUE = false;
 
   public static final String LOAD_ON_STARTUP = "loadOnStartup";
   

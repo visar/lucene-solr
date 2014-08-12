@@ -670,7 +670,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String cname = params.get(CoreAdminParams.CORE);
     boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
     boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
-    boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
+    boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR,
+                                               CoreAdminParams.DELETE_INSTANCE_DIR_DEFAULT_VALUE);
 
     coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
 

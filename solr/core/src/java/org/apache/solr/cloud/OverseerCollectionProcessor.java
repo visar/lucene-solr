@@ -932,7 +932,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     // assume the core exists and try to unload it
     Map m = ZkNodeProps.makeMap("qt", adminPath, CoreAdminParams.ACTION,
         CoreAdminAction.UNLOAD.toString(), CoreAdminParams.CORE, core,
-        CoreAdminParams.DELETE_INSTANCE_DIR, "true",
+        CoreAdminParams.DELETE_INSTANCE_DIR, message.getStr(CoreAdminParams.DELETE_INSTANCE_DIR, Boolean.toString(CoreAdminParams.DELETE_INSTANCE_DIR_DEFAULT_VALUE)),
         CoreAdminParams.DELETE_DATA_DIR, "true");
     
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
