@@ -43,6 +43,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -239,20 +240,11 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   @Override
-  public void checkDistributed(ResponseBuilder rb) {
-    SolrQueryRequest req = rb.req;
-    SolrParams params = req.getParams();
-
-    rb.isDistrib = params.getBool("distrib", req.getCore().getCoreDescriptor()
-        .getCoreContainer().isZooKeeperAware());
-    String shards = params.get(ShardParams.SHARDS);
-
-    // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
-    // search is distributed.
-    boolean hasShardURL = shards != null && shards.indexOf('/') > 0;
-    rb.isDistrib = hasShardURL | rb.isDistrib;
+  public void prepDistributed(ResponseBuilder rb) {
+    final SolrQueryRequest req = rb.req;
+    final SolrParams params = req.getParams();
+    final String shards = params.get(ShardParams.SHARDS);
     
-    if (rb.isDistrib) {
       // since the cost of grabbing cloud state is still up in the air, we grab it only
       // if we need it.
       ClusterState clusterState = null;
@@ -347,6 +339,8 @@ public class HttpShardHandler extends ShardHandler {
         }
 
 
+        HttpShardHandlerFactory.ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
+        
         for (int i=0; i<rb.shards.length; i++) {
           if (rb.shards[i] == null) {
             if (clusterState == null) {
@@ -365,15 +359,22 @@ public class HttpShardHandler extends ShardHandler {
               // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such shard: " + sliceName);
             }
 
-            Map<String, Replica> sliceShards = slice.getReplicasMap();
+            final Collection<Replica> replicas = slice.getReplicasMap().values();
+            final List<Replica> live_replicas = new ArrayList<>(replicas.size());
 
-            // For now, recreate the | delimited list of equivalent servers
-            StringBuilder sliceShardsStr = new StringBuilder();
-            boolean first = true;
-            for (Replica replica : sliceShards.values()) {
+            for (Replica replica : replicas) {
               if (!clusterState.liveNodesContain(replica.getNodeName())
                   || !replica.getStr(ZkStateReader.STATE_PROP).equals(
                       ZkStateReader.ACTIVE)) continue;
+              live_replicas.add( replica );
+            }
+
+            replicaListTransformer.transform(live_replicas);
+            
+            // For now, recreate the | delimited list of equivalent servers
+            StringBuilder sliceShardsStr = new StringBuilder();
+            boolean first = true;
+            for (Replica replica : live_replicas) {
               if (first) {
                 first = false;
               } else {
@@ -387,15 +388,14 @@ public class HttpShardHandler extends ShardHandler {
           }
         }
       }
-    }
-    String shards_rows = params.get(ShardParams.SHARDS_ROWS);
-    if(shards_rows != null) {
-      rb.shards_rows = Integer.parseInt(shards_rows);
-    }
-    String shards_start = params.get(ShardParams.SHARDS_START);
-    if(shards_start != null) {
-      rb.shards_start = Integer.parseInt(shards_start);
-    }
+      String shards_rows = params.get(ShardParams.SHARDS_ROWS);
+      if(shards_rows != null) {
+        rb.shards_rows = Integer.parseInt(shards_rows);
+      }
+      String shards_start = params.get(ShardParams.SHARDS_START);
+      if(shards_start != null) {
+        rb.shards_start = Integer.parseInt(shards_start);
+      }
   }
 
 

@@ -22,20 +22,29 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletionService;
@@ -78,8 +87,38 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   private String scheme = null;
 
+  protected interface ReplicaListTransformer {
+    public void transform(List<Replica> replicas);
+  };
+  
+  protected class SortingReplicaListTransformer implements ReplicaListTransformer {
+    private final Comparator<Replica> replicaComparator;
+    public SortingReplicaListTransformer(Comparator<Replica> replicaComparator)
+    {
+      this.replicaComparator = replicaComparator;      
+    }
+    public void transform(List<Replica> replicas)
+    {
+      Collections.sort(replicas, replicaComparator);
+    }
+  };
+  
+  protected class ShufflingReplicaListTransformer implements ReplicaListTransformer {
+    private final Random r;
+    public ShufflingReplicaListTransformer(Random r)
+    {
+      this.r = r;      
+    }
+    public void transform(List<Replica> replicas)
+    {
+      Collections.shuffle(replicas, r);
+    }
+  };
+  
   private final Random r = new Random();
 
+  private final ReplicaListTransformer shufflingReplicaListTransformer = new ShufflingReplicaListTransformer(r);
+  
   // URL scheme to be used in distributed search.
   static final String INIT_URL_SCHEME = "urlScheme";
 
@@ -221,17 +260,144 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       urls.set(i, buildUrl(urls.get(i)));
     }
 
-    //
-    // Shuffle the list instead of use round-robin by default.
-    // This prevents accidental synchronization where multiple shards could get in sync
-    // and query the same replica at the same time.
-    //
-    if (urls.size() > 1)
-      Collections.shuffle(urls, r);
-
     return urls;
   }
 
+  private class HostAffinityReplicaComparator implements Comparator<Replica> {
+
+    private final Map<String,Integer> hostPrioritiesMap;
+    private final List<String> shuffledLiveHostsList;
+    
+    private class HostComparator implements Comparator<String> {
+      @Override
+      public int compare(String lhs, String rhs) {
+        final int no_priority = Integer.MAX_VALUE;
+        final int lhs_priority = (hostPrioritiesMap.containsKey(lhs) ? hostPrioritiesMap.get(lhs).intValue() : no_priority);
+        final int rhs_priority = (hostPrioritiesMap.containsKey(rhs) ? hostPrioritiesMap.get(rhs).intValue() : no_priority);
+        return (lhs_priority - rhs_priority);
+      }
+    };
+    
+    private String nodeName_TO_host(String nodeName) {
+      // format is host:port_solr
+      return nodeName.substring(0, nodeName.indexOf(':'));
+    }
+    
+    HostAffinityReplicaComparator(Set<String> liveNodes, Random r, Map<String,Integer> hostPrioritiesMap) {
+      log.debug("HostAffinityReplicaComparator liveNodes={} r={} hostPrioritiesMap={}",
+          liveNodes, r, hostPrioritiesMap);
+      this.hostPrioritiesMap = hostPrioritiesMap;
+
+      final Set<String> liveHosts = new HashSet<String>();
+      for (String liveNode : liveNodes) {
+        liveHosts.add( nodeName_TO_host(liveNode) );        
+      }
+      log.debug("HostAffinityReplicaComparator unique liveHosts={}", liveHosts);
+
+      shuffledLiveHostsList = new ArrayList<String>(liveHosts);
+      Collections.shuffle(shuffledLiveHostsList, r);
+      log.debug("HostAffinityReplicaComparator shuffled liveHosts={}", shuffledLiveHostsList);
+
+      if (hostPrioritiesMap != null) {
+        Comparator<String> host_comparator = new HostComparator();      
+        Collections.sort(shuffledLiveHostsList, host_comparator); // sort is guarantee to be a stable sort
+        log.debug("HostAffinityReplicaComparator shuffled-then-stable-sorted liveHosts={}", shuffledLiveHostsList);
+      }
+    }
+    
+    @Override
+    public int compare(Replica lhs, Replica rhs) {
+      return (shuffledLiveHostsList.indexOf( nodeName_TO_host(lhs.getNodeName()) ) - shuffledLiveHostsList.indexOf( nodeName_TO_host(rhs.getNodeName()) ));        
+    }
+    
+  };
+  
+  private class NodeAffinityReplicaComparator implements Comparator<Replica> {
+
+    private final Comparator<Replica> hostAffinityReplicaComparator;
+    private final List<String> shuffledLiveNodesList;
+    
+    NodeAffinityReplicaComparator(Set<String> liveNodes, Random r, Comparator<Replica> hostAffinityReplicaComparator) {
+      log.debug("NodeAffinityReplicaComparator liveNodes={} r={} hostAffinityReplicaComparator={}",
+          liveNodes, r, hostAffinityReplicaComparator);
+      this.hostAffinityReplicaComparator = hostAffinityReplicaComparator;
+
+      shuffledLiveNodesList = new ArrayList<String>(liveNodes);
+      Collections.shuffle(shuffledLiveNodesList, r);
+      log.debug("ShuffledLiveHostsListReplicaComparator shuffled liveNodes={}", shuffledLiveNodesList);
+    }
+    
+    @Override
+    public int compare(Replica lhs, Replica rhs) {
+      int diff = 0;
+      if (hostAffinityReplicaComparator != null) {
+        diff = hostAffinityReplicaComparator.compare(lhs, rhs);        
+      }
+      if (0 == diff) {
+        diff = (shuffledLiveNodesList.indexOf(lhs.getNodeName()) - shuffledLiveNodesList.indexOf(rhs.getNodeName()));
+      }
+      return diff;
+    }
+    
+  };
+  
+  ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
+  {
+    SolrParams params = req.getParams();
+    boolean hostAffinity = false;
+    boolean nodeAffinity = false;
+    Map<String,Integer> hostPrioritiesMap = null;
+    
+    String[] replicaAffinities = params.getParams("replicaAffinity");
+    if (replicaAffinities != null) {
+      for (String replicaAffinity : replicaAffinities) {
+        if ("host".equals(replicaAffinity)) {
+          hostAffinity = true;
+          // hostAffinity may or may not be supplemented by hostPriorities
+          String hostPriorities = params.get("replicaAffinity.hostPriorities");
+          if (hostPriorities == null) {
+            hostPriorities = params.get("replicaAffinity.preferredHosts"); // deprecated
+          }
+          if (hostPriorities != null) {
+            final Integer defaultPriority = new Integer(1);
+            List<String> hostPrioritiesList = StrUtils.splitSmart(hostPriorities,  ",", true);
+            hostPrioritiesMap = new HashMap<>(hostPrioritiesList.size());
+            for (String hostPriority : hostPrioritiesList) {
+              int delimiter_pos = hostPriority.indexOf("=");
+              if (delimiter_pos < 0) {
+                hostPrioritiesMap.put(hostPriority, defaultPriority);
+              } else {
+                hostPrioritiesMap.put(
+                    hostPriority.substring(0, delimiter_pos),
+                    new Integer( Integer.parseInt(hostPriority.substring(delimiter_pos+1)) ));
+              }
+            }
+          }
+        }
+        else if ("node".equals(replicaAffinity)) {
+          nodeAffinity = true;
+        }
+      }
+    }
+
+    if (hostAffinity || nodeAffinity) {
+      Comparator<Replica> replicaComparator = null;      
+
+      Set<String> liveNodes = req.getCore().getCoreDescriptor().getCoreContainer().getZkController().getClusterState().getLiveNodes();
+    
+      if (hostAffinity) {
+        replicaComparator = new HostAffinityReplicaComparator(liveNodes, r, hostPrioritiesMap);            
+      }
+      if (nodeAffinity) {
+        replicaComparator = new NodeAffinityReplicaComparator(liveNodes, r, replicaComparator);      
+      }
+
+      return new SortingReplicaListTransformer(replicaComparator);
+    } else {
+      return shufflingReplicaListTransformer;
+    }    
+  }
+  
   /**
    * Creates a new completion service for use by a single set of distributed requests.
    */
