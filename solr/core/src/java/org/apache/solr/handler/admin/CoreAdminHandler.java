@@ -693,7 +693,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
       }
       
-      if (params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false)) {
+      if (params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, CoreAdminParams.DELETE_INSTANCE_DIR_DEFAULT_VALUE)) {
         core.addCloseHook(new CloseHook() {
           @Override
           public void preClose(SolrCore core) {}
