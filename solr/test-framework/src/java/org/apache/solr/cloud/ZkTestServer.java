@@ -22,8 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -74,25 +72,10 @@ public class ZkTestServer {
   
   private int theTickTime = TICK_TIME;
 
-  private static enum LimitViolationAction {
+  static public enum LimitViolationAction {
     IGNORE,
     REPORT,
-    FAIL;
-    public void doAction(String message) {
-      switch (values()[ordinal()]) {
-        case IGNORE: break;
-        case REPORT:
-        case FAIL:
-          AssertionError e = new AssertionError(message);
-          if (values()[ordinal()] == LimitViolationAction.REPORT) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            log.warn("{}: {}", e.getMessage(), sw);
-            break;
-          }
-          else /* action == LimitViolation.FAIL */ throw e;
-      }
-    }
+    FAIL,
   }
 
   class ZKServerMain {
@@ -121,7 +104,7 @@ public class ZkTestServer {
     }
 
     private class WatchLimit {
-      private final long limit;
+      private long limit;
       private final String desc;
 
       private LimitViolationAction action;
@@ -138,7 +121,11 @@ public class ZkTestServer {
         this.action = action;
       }
 
-      public void updateForWatch(String key, Watcher watcher) throws AssertionError {
+      public void setLimit(long limit) {
+        this.limit = limit;
+      }
+
+      public void updateForWatch(String key, Watcher watcher) {
         if (watcher != null) {
           log.debug("Watch added: {}: {}", desc, key);
           long count = counters.incrementAndGet(key);
@@ -146,9 +133,11 @@ public class ZkTestServer {
           if (lastCount == null || count > lastCount) {
             maxCounters.put(key, count);
           }
-          if (count > limit) {
-            action.doAction("Number of watches created in parallel for data: " + key +
-                ", type: " + desc + " exceeds limit (" + count + " > " + limit + ")");
+          if (count > limit && action != LimitViolationAction.IGNORE) {
+            String msg = "Number of watches created in parallel for data: " + key +
+                ", type: " + desc + " exceeds limit (" + count + " > " + limit + ")";
+            log.warn("{}", msg);
+            if (action == LimitViolationAction.FAIL) throw new AssertionError(msg);
           }
         }
       }
@@ -183,7 +172,7 @@ public class ZkTestServer {
       }
     }
 
-    private class WatchLimiter {
+    public class WatchLimiter {
       WatchLimit statLimit;
       WatchLimit dataLimit;
       WatchLimit childrenLimit;
@@ -200,7 +189,13 @@ public class ZkTestServer {
         childrenLimit.setAction(action);
       }
 
-      private String reportLimitViolations() {
+      public void setLimit(long limit) {
+        statLimit.setLimit(limit);
+        dataLimit.setLimit(limit);
+        childrenLimit.setLimit(limit);
+      }
+
+      public String reportLimitViolations() {
         return statLimit.reportLimitViolations() +
             dataLimit.reportLimitViolations() +
             childrenLimit.reportLimitViolations();
@@ -409,14 +404,17 @@ public class ZkTestServer {
       public long getSessionId() {
         return sessionId;
       }
+
       @Override
       public int getTimeout() {
         return 4000;
       }
+
       @Override
       public boolean isClosing() {
         return false;
-      }});
+      }
+    });
   }
 
   public void run() throws InterruptedException {
