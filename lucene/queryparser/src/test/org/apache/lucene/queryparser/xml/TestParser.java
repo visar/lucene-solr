@@ -29,14 +29,17 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -55,7 +58,7 @@ public class TestParser extends LuceneTestCase {
   private static Directory dir;
   private static IndexReader reader;
   private static IndexSearcher searcher;
-  private static String ANALYSER_PARAM     = "tests.analyser";
+  private static String ANALYSER_PARAM     = "tests.TestParser.analyser";
   private static String DEFAULT_ANALYSER   = "mock";
   private static String STANDARD_ANALYSER  = "standard";
  
@@ -73,7 +76,6 @@ public class TestParser extends LuceneTestCase {
       // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
       analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     }
-    
     builder = new CorePlusExtensionsParser("contents", analyzer);
 
     BufferedReader d = new BufferedReader(new InputStreamReader(
@@ -109,13 +111,26 @@ public class TestParser extends LuceneTestCase {
     builder = null;
   }
 
-  public void testSimpleXML() throws ParserException, IOException {
+  public void testTermQueryXML() throws ParserException, IOException {
     Query q = parse("TermQuery.xml");
     dumpResults("TermQuery", q, 5);
+  }
+  
+  public void testTermQueryEmptyXML() throws ParserException, IOException {
+    parse("TermQueryEmpty.xml", true/*shouldFail*/);
+  }
+  
+  public void testTermQueryStopwordXML() throws ParserException, IOException {
+    parse("TermQueryStopwords.xml", true/*shouldFail*/);
+  }
+  
+  public void testTermQueryMultipleTermsXML() throws ParserException, IOException {
+    parse("TermQueryMultipleTerms.xml", true/*shouldFail*/);
   }
 
   public void testSimpleTermsQueryXML() throws ParserException, IOException {
     Query q = parse("TermsQuery.xml");
+    assertTrue("Expecting a BooleanQuery, but resulted in " + q.getClass(), q instanceof BooleanQuery);
     dumpResults("TermsQuery", q, 5);
   }
 
@@ -126,13 +141,32 @@ public class TestParser extends LuceneTestCase {
   
   public void testTermsQueryWithSingleTerm() throws ParserException, IOException {
     Query q = parse("TermsQuerySingleTerm.xml");
-    dumpResults("testTermsQueryWithSingleTerm", q, 5);
+    assertTrue("Expecting a TermQuery, but resulted in " + q.getClass(), q instanceof TermQuery);
+    dumpResults("TermsQueryWithSingleTerm", q, 5);
   }
   
+  
+  //term appears like single term but results in two terms when it runs through standard analyzer
   public void testTermsQueryWithStopwords() throws ParserException, IOException {
     Query q = parse("TermsQueryStopwords.xml");
-    dumpResults("testTermsQueryWithStopwords", q, 5);
+    if (builder.analyzer instanceof StandardAnalyzer)
+      assertTrue("Expecting a BooleanQuery, but resulted in " + q.getClass(), q instanceof BooleanQuery);
+    dumpResults("TermsQueryWithStopwords", q, 5);
     }
+  
+  public void testTermsQueryEmpty() throws ParserException, IOException {
+    Query q = parse("TermsQueryEmpty.xml");
+    assertTrue("Expecting a MatchAllDocsQuery, but resulted in " + q.getClass(), q instanceof MatchAllDocsQuery);
+    dumpResults("Empty TermsQuery", q, 5);
+  }
+  
+  public void testTermsQueryWithOnlyStopwords() throws ParserException, IOException {
+    Query q = parse("TermsQueryOnlyStopwords.xml");
+    if (builder.analyzer instanceof StandardAnalyzer)
+      assertTrue("Expecting a MatchAllDocsQuery, but resulted in " + q.getClass(), q instanceof MatchAllDocsQuery);
+    dumpResults("TermsQuery with only stopwords", q, 5);
+  }
+  
 
   public void testBooleanQueryXML() throws ParserException, IOException {
     Query q = parse("BooleanQuery.xml");
@@ -200,6 +234,11 @@ public class TestParser extends LuceneTestCase {
     dumpResults("TermsFilter with Stopword", q, 5);
   }
   
+  public void testTermsFilterQueryWithOnlyStopword() throws Exception {
+    Query q = parse("TermsFilterOnlyStopwords.xml");
+    dumpResults("TermsFilter with all stop words", q, 5);
+  }
+  
   public void testBoostingTermQueryXML() throws Exception {
     Query q = parse("BoostingTermQuery.xml");
     dumpResults("BoostingTermQuery", q, 5);
@@ -214,10 +253,46 @@ public class TestParser extends LuceneTestCase {
     Query q = parse("ConstantScoreQuery.xml");
     dumpResults("ConstantScoreQuery", q, 5);
   }
-
+  
   public void testPhraseQueryXML() throws Exception {
     Query q = parse("PhraseQuery.xml");
+    assertTrue("Expecting a PhraseQuery, but resulted in " + q.getClass(), q instanceof PhraseQuery);
     dumpResults("PhraseQuery", q, 5);
+  }
+  
+  public void testPhraseQueryXMLWithStopwordsXML() throws Exception {
+    if (builder.analyzer instanceof StandardAnalyzer) {
+      parse("PhraseQueryStopwords.xml", true/*shouldfail*/);
+    }
+  }
+  
+  public void testPhraseQueryXMLWithNoTextXML() throws Exception {
+    parse("PhraseQueryEmpty.xml", true/*shouldFail*/);
+  }
+
+  public void testGenericTextQueryXML() throws Exception {
+    Query q = parse("GenericTextQuery.xml");
+    assertTrue("Expecting a PhraseQuery, but resulted in " + q.getClass(), q instanceof PhraseQuery);
+    dumpResults("GenericTextQuery", q, 5);
+  }
+  
+  public void testGenericTextQuerySingleTermXML() throws Exception {
+    Query q = parse("GenericTextQuerySingleTerm.xml");
+    assertTrue("Expecting a TermQuery, but resulted in " + q.getClass(), q instanceof TermQuery);
+    dumpResults("GenericTextQuery", q, 5);
+  }
+  
+  public void testGenericTextQueryWithStopwordsXML() throws Exception {
+    Query q = parse("GenericTextQueryStopwords.xml");
+    if (builder.analyzer instanceof StandardAnalyzer)
+      assertTrue("Expecting a MatchAllDocsQuery, but resulted in " + q.getClass(), q instanceof MatchAllDocsQuery);
+    dumpResults("GenericTextQuery with stopwords", q, 5);
+  }
+  
+  public void testGenericTextQueryWithNoTextXML() throws Exception {
+    Query q = parse("GenericTextQueryEmpty.xml");
+    assertTrue("Expecting a MatchAllDocsQuery, but resulted in " + q.getClass(), q instanceof MatchAllDocsQuery);
+    dumpResults("GenericTextQuery with no text", q, 5);
   }
 
   public void testMatchAllDocsPlusFilterXML() throws ParserException, IOException {
@@ -261,19 +336,29 @@ public class TestParser extends LuceneTestCase {
   //================= Helper methods ===================================
 
   private Query parse(String xmlFileName) throws ParserException, IOException {
+    return parse(xmlFileName, false);
+  }
+  private Query parse(String xmlFileName, Boolean shouldFail) throws ParserException, IOException {
     InputStream xmlStream = TestParser.class.getResourceAsStream(xmlFileName);
     assertTrue("Test XML file " + xmlFileName + " cannot be found", xmlStream != null);
-    Query result = builder.parse(xmlStream);
+    Query result = null;
+    try {
+      result = builder.parse(xmlStream);
+    } catch (ParserException ex) {
+      assertTrue("Parser exception " + ex, shouldFail);
+    }
+    if (shouldFail && result != null)
+      assertTrue("Expected to fail. But resulted in query: " + result.getClass() + " with value: " + result, false);
     xmlStream.close();
     return result;
   }
 
   private void dumpResults(String qType, Query q, int numDocs) throws IOException {
     if (VERBOSE) {
-      System.out.println("TEST: query=" + q);
+      System.out.println("TEST: " + q.getClass() + " query=" + q);
     }
     TopDocs hits = searcher.search(q, null, numDocs);
-    assertTrue(qType + " should produce results ", hits.totalHits > 0);
+    assertTrue(qType + " " + q + " should produce results ", hits.totalHits > 0);
     if (VERBOSE) {
       System.out.println("=========" + qType + "============");
       ScoreDoc[] scoreDocs = hits.scoreDocs;

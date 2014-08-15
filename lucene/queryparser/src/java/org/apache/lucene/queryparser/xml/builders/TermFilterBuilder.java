@@ -1,8 +1,9 @@
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.queries.TermFilter;
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.SingleTermProcessor;
 import org.apache.lucene.queryparser.xml.TermBuilder;
 import org.apache.lucene.queryparser.xml.FilterBuilder;
 import org.apache.lucene.queryparser.xml.ParserException;
@@ -36,25 +37,22 @@ public class TermFilterBuilder implements FilterBuilder {
     this.termBuilder = termBuilder;
   }
 
-  private class TermFilterProcessor implements TermBuilder.TermProcessor {
-    public TermFilter tf = null;
-    public void process(Term t) throws ParserException {
-      if (null == tf) {
-        tf = new TermFilter(t);
-      } else {
-        throw new ParserException("TermFilter already set: " + tf);
-      }
-    }
-  }
-
   @Override
   public Filter getFilter(final Element e) throws ParserException {
 
-    TermFilterProcessor tp = new TermFilterProcessor();
-
-    termBuilder.extractTerms(tp, e);
-
-    return tp.tf;
+    SingleTermProcessor tp = new SingleTermProcessor();
+    String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
+    //extract the value and fail if there is no value. 
+    //This is a query builder for one and only one term
+    String value =  DOMUtils.getNonBlankTextOrFail(e);
+    this.termBuilder.extractTerms(tp, field, value);
+    
+    try {
+      return new TermFilter(tp.getTerm());
+    } catch (ParserException ex){
+      throw new ParserException(ex.getMessage() + " field:" + field 
+          + " value:" + value + ". Check the query anlyser configured on this field." );
+    }
   }
 
 }

@@ -114,7 +114,11 @@ public class PhraseQuery extends Query {
   public Term[] getTerms() {
     return terms.toArray(new Term[0]);
   }
-
+  
+  /** Returns whether the PhraseQuery does not have any terms */
+  public boolean isEmpty() {
+    return terms.isEmpty();
+  }
   /**
    * Returns the relative positions of terms in this phrase.
    */
