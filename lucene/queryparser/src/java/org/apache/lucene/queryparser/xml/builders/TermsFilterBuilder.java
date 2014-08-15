@@ -1,7 +1,9 @@
 package org.apache.lucene.queryparser.xml.builders;
 
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.MatchAllDocsFilter;
 import org.apache.lucene.queries.TermFilter;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.queryparser.xml.FilterBuilder;
@@ -42,8 +44,19 @@ public class TermsFilterBuilder implements FilterBuilder {
 
   private class TermsFilterProcessor implements TermBuilder.TermProcessor {
     public List<Term> terms = new ArrayList<Term>();
-    public void process(Term t) throws ParserException {
+    public void process(Term t) {
       terms.add(t);
+    }
+    
+    public Filter getFilter() {
+      final int termsSize = terms.size();
+      if (termsSize == 0) {
+          return new MatchAllDocsFilter();
+      } else if (termsSize == 1) {
+          return new TermFilter(terms.get(0));
+      } else {
+          return new TermsFilter(terms);
+      }
     }
   }
 
@@ -59,6 +72,6 @@ public class TermsFilterBuilder implements FilterBuilder {
 
     termBuilder.extractTerms(tp, e);
 
-    return ((tp.terms.size() == 1)? new TermFilter(tp.terms.iterator().next()) : new TermsFilter(tp.terms));
+    return tp.getFilter();
   }
 }

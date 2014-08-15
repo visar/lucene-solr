@@ -41,10 +41,13 @@ public class TermBuilder {
   }
 
   public interface TermProcessor {
-    public void process(Term t) throws ParserException;
-  };
+    //callback for each term found during processing the field value
+    public void process(Term t);
+  };  
 
-  private void extractTerms(TermProcessor tp, String field, String value) throws ParserException {
+  //use this if you already have a field name and value and would like to apply analyzer and get Term/Terms.
+  //TermProcess.process callback will be called for each term found
+  public void extractTerms(TermProcessor tp, String field, String value) throws ParserException {
     if (null == analyzer) {
       tp.process(new Term(field, value));
     } else {
@@ -69,6 +72,7 @@ public class TermBuilder {
     }
   }
 
+  //Handles nested Term TermQueries and/or not throws any exceptions on empty elements being found.
   public void extractTerms(TermProcessor tp, final Element e) throws ParserException {
 
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
@@ -80,19 +84,26 @@ public class TermBuilder {
     for (int i = 0; i < nl_len; i++) {
       final Node node = nl.item(i);
       if (Node.ELEMENT_NODE == node.getNodeType() && node.getNodeName().equals("Term")) {
+        //Its analyzers job to ignore any spaces if required. ie. We don't do trimming before checking emptiness.
+        String value = DOMUtils.getText((Element) node);
+        if(value == null || value.length() == 0)
+          return;
         extractTerms(
             tp,
             fieldName,
-            DOMUtils.getNonBlankTextOrFail((Element) node));
+            value);
         called_extractTerms = true;
       }
     }
 
     if (!called_extractTerms) {
+      String value = DOMUtils.getText(e);
+      if(value == null || value.length() == 0)
+        return;
       extractTerms(
           tp,
           fieldName,
-          DOMUtils.getNonBlankTextOrFail(e));
+          value);
     }
   }
 

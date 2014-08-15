@@ -3,6 +3,7 @@ package org.apache.lucene.queryparser.xml.builders;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.queryparser.xml.DOMUtils;
@@ -29,7 +30,9 @@ import org.w3c.dom.Element;
  */
 
 /**
- * Builds a BooleanQuery from all of the terms found in the XML element using the choice of analyzer
+ * Builds a MatchAllDocsQuery if the terms found are zero. 
+ * Builds a TermQuery If there is only one resulting term after analyzer being applied 
+ * Builds a BooleanQuery from all of the terms found in the XML element using the choice of analyzer, if there are multiple terms.
  */
 public class TermsQueryBuilder implements QueryBuilder {
 
@@ -40,26 +43,44 @@ public class TermsQueryBuilder implements QueryBuilder {
   }
 
   private class TermsQueryProcessor implements TermBuilder.TermProcessor {
-    private final BooleanQuery bq;
-    TermsQueryProcessor(BooleanQuery bq) {
-      this.bq = bq;
+    private BooleanQuery bq = null;//this will be instantiated only if the TermsQuery results in multiple terms
+    private TermQuery    firstTq = null;//Keeps the first TermQuery for the first Term in the query and if there are more terms found then this will be consumed by above BooleanQuery
+    private final Element xmlQueryElement;
+    
+    TermsQueryProcessor(Element e) {
+      xmlQueryElement = e;
     }
-    public void process(Term t) throws ParserException {
+    public void process(Term t){
+      if (null == firstTq) {
+        firstTq = new TermQuery(t);
+        return;
+      }
+      if (bq == null) {
+        bq = new BooleanQuery(DOMUtils.getAttribute(xmlQueryElement, "disableCoord", false));
+        bq.add(new BooleanClause(firstTq, BooleanClause.Occur.SHOULD));
+      }
       bq.add(new BooleanClause(new TermQuery(t), BooleanClause.Occur.SHOULD));
+    }
+    
+    public Query getQuery() {
+      if (firstTq == null) {
+          return new MatchAllDocsQuery();
+      } else if (bq == null) {
+          firstTq.setBoost(DOMUtils.getAttribute(xmlQueryElement, "boost", 1.0f));
+          return firstTq;
+      } else {
+          bq.setBoost(DOMUtils.getAttribute(xmlQueryElement, "boost", 1.0f));
+          bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(xmlQueryElement, "minimumNumberShouldMatch", 0));
+          return bq;
+      }
     }
   }
 
   @Override
   public Query getQuery(Element e) throws ParserException {
-
-    final BooleanQuery bq = new BooleanQuery(DOMUtils.getAttribute(e, "disableCoord", false));
-    bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e, "minimumNumberShouldMatch", 0));
-    bq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
-    final TermsQueryProcessor tp = new TermsQueryProcessor(bq);
-
+    final TermsQueryProcessor tp = new TermsQueryProcessor(e);
     termBuilder.extractTerms(tp, e);
-
-    return ((tp.bq.clauses().size() == 1) ? tp.bq.clauses().iterator().next().getQuery() : tp.bq);
+    return tp.getQuery();
   }
 
 }

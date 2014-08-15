@@ -91,9 +91,14 @@ public class PhraseQueryBuilder implements QueryBuilder {
         } finally {
             IOUtils.closeWhileHandlingException(source);
         }
+        
+        if(pq.isEmpty())
+        {
+          throw new ParserException("Empty phrase query generated for field:" + field
+                            + ", phrase:" + phrase);
+        }
         pq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
         // TODO pq.setSlop(phraseSlop);
-
         return pq;
 
     }
