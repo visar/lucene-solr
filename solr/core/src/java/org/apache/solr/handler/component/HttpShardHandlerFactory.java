@@ -304,12 +304,15 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     boolean hostAffinity = false;
     boolean nodeAffinity = params.getBool("nodeAffinity", false); // deprecated - use replicaAffinity=node instead going forward
     
-    for (String replicaAffinity : params.getParams("replicaAffinity")) {
-      if ("host".equals(replicaAffinity)) {
-        hostAffinity = true;
-      }
-      else if ("node".equals(replicaAffinity)) {
-        nodeAffinity = true;
+    String[] replicaAffinities = params.getParams("replicaAffinity");
+    if (replicaAffinities != null) {
+      for (String replicaAffinity : replicaAffinities) {
+        if ("host".equals(replicaAffinity)) {
+          hostAffinity = true;
+        }
+        else if ("node".equals(replicaAffinity)) {
+          nodeAffinity = true;
+        }
       }
     }
     
