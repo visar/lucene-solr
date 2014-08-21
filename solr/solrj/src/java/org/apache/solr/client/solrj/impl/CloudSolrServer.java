@@ -90,6 +90,7 @@ public class CloudSolrServer extends SolrServer {
   Random rand = new Random();
   
   private final boolean updatesToLeaders;
+  private boolean directeUpdateToLeadersOnly = false;
   private boolean parallelUpdates = true;
   private ExecutorService threadPool = Executors
       .newCachedThreadPool(new SolrjNamedThreadFactory(
@@ -264,6 +265,10 @@ public class CloudSolrServer extends SolrServer {
     this.parallelUpdates = parallelUpdates;
   }
 
+  public void setDirectUpdateToLeadersOnly(boolean directeUpdateToLeadersOnly) {
+    this.directeUpdateToLeadersOnly = directeUpdateToLeadersOnly;
+  }
+
   private NamedList directUpdate(AbstractUpdateRequest request, ClusterState clusterState) throws SolrServerException {
     UpdateRequest updateRequest = (UpdateRequest) request;
     ModifiableSolrParams params = (ModifiableSolrParams) request.getParams();
@@ -329,7 +334,9 @@ public class CloudSolrServer extends SolrServer {
         responseFutures.put(url, threadPool.submit(new Callable<NamedList<?>>() {
           @Override
           public NamedList<?> call() throws Exception {
-            return lbServer.request(lbRequest).getResponse();
+            LBHttpSolrServer.Rsp rsp = lbServer.request(lbRequest);
+            rsp.getResponse().add("serverAddress", rsp.getServer());
+            return rsp.getResponse();
           }
         }));
       }
@@ -355,8 +362,9 @@ public class CloudSolrServer extends SolrServer {
         String url = entry.getKey();
         LBHttpSolrServer.Req lbRequest = entry.getValue();
         try {
-          NamedList rsp = lbServer.request(lbRequest).getResponse();
-          shardResponses.add(url, rsp);
+          LBHttpSolrServer.Rsp rsp = lbServer.request(lbRequest);
+          rsp.getResponse().add("serverAddress", rsp.getServer());
+          shardResponses.add(url, rsp.getResponse());
         } catch (Exception e) {
           throw new SolrServerException(e);
         }
@@ -387,6 +395,7 @@ public class CloudSolrServer extends SolrServer {
       LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(nonRoutableRequest, urlList);
       try {
         LBHttpSolrServer.Rsp rsp = lbServer.request(req);
+        rsp.getResponse().add("serverAddress", rsp.getServer());
         shardResponses.add(urlList.get(0), rsp.getResponse());
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, urlList.get(0), e);
@@ -417,15 +426,17 @@ public class CloudSolrServer extends SolrServer {
       ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
       String url = zkProps.getCoreUrl();
       urls.add(url);
-      Collection<Replica> replicas = slice.getReplicas();
-      Iterator<Replica> replicaIterator = replicas.iterator();
-      while (replicaIterator.hasNext()) {
-        Replica replica = replicaIterator.next();
-        if (!replica.getNodeName().equals(leader.getNodeName()) &&
-            !replica.getName().equals(leader.getName())) {
-          ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);
-          String url1 = zkProps1.getCoreUrl();
-          urls.add(url1);
+      if (this.directeUpdateToLeadersOnly == false) {
+        Collection<Replica> replicas = slice.getReplicas();
+        Iterator<Replica> replicaIterator = replicas.iterator();
+        while (replicaIterator.hasNext()) {
+          Replica replica = replicaIterator.next();
+          if (!replica.getNodeName().equals(leader.getNodeName()) &&
+              !replica.getName().equals(leader.getName())) {
+            ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);
+            String url1 = zkProps1.getCoreUrl();
+            urls.add(url1);
+          }
         }
       }
       urlMap.put(name, urls);
@@ -634,6 +645,7 @@ public class CloudSolrServer extends SolrServer {
     
     LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, theUrlList);
     LBHttpSolrServer.Rsp rsp = lbServer.request(req);
+    rsp.getResponse().add("serverAddress", rsp.getServer());
     return rsp.getResponse();
   }
 
