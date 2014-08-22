@@ -3,9 +3,13 @@ package org.apache.solr.schema;
  * Modelled on SimilarityFactory class.
  */
 
+import org.apache.lucene.index.sorter.EarlyTerminatingSortingCollector;
+import org.apache.lucene.index.sorter.SortingMergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.DefaultMergeSortFactory;
 
 import java.util.Collection;
 import java.util.Iterator;

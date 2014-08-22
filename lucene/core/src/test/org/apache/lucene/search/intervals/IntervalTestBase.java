@@ -83,7 +83,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
    * @param expectedResults and int[][] detailing the expected results, in the format
    *                        { { docid1, startoffset1, endoffset1, startoffset2, endoffset2, ... },
    *                          { docid2, startoffset1, endoffset1, startoffset2, endoffset2, ...}, ... }
-   * @throws IOException
+   * @throws IOException if a low level I/O exception occurs
    */
   public static void checkIntervalOffsets(Query q, IndexSearcher searcher, int[][] expectedResults) throws IOException {
 
@@ -117,7 +117,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
    * @param expectedResults and int[][] detailing the expected results, in the format
    *                        { { docid1, startpos1, endpos1, startpos2, endpos2, ... },
    *                          { docid2, startpos1, endpos1, startpos2, endpos2, ...}, ... }
-   * @throws IOException
+   * @throws IOException if a low level I/O exception occurs
    */
   public static void checkIntervals(Query q, IndexSearcher searcher, int[][] expectedResults) throws IOException {
 
