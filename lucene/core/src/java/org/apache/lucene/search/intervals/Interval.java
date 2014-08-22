@@ -135,7 +135,7 @@ public class Interval implements Cloneable {
 
   /**
    * Compare with another Interval to find overlaps
-   * @param other
+   * @param other The Interval to compare with
    * @return true if the two intervals overlap
    */
   public boolean overlaps(Interval other) {
