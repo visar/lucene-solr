@@ -133,6 +133,8 @@ Bug Fixes
 * SOLR-6545: Query field list with wild card on dynamic field fails.
   (Burke Webster, Xu Zhang, shalin)
 
+* SOLR-6426: SolrZkClient clean can fail due to a race with children nodes. (Mark Miller)
+
 Other Changes
 ----------------------
 
