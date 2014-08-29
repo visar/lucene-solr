@@ -338,7 +338,7 @@ public abstract class ConfigSolr {
       return readProperties(((NodeList) config.evaluate(
           path, XPathConstants.NODESET)).item(0));
     } catch (Exception e) {
-      SolrException.log(log, null, e);
+      SolrException.log(log, e);
     }
     return null;
 

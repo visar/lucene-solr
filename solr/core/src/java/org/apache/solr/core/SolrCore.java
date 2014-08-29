@@ -1726,7 +1726,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
       Future future=null;
 
-      // if the underlying seracher has not changed, no warming is needed
+      // if the underlying searcher has not changed, no warming is needed
       if (newSearcher != currSearcher) {
         
         // warm the new searcher based on the current searcher.
@@ -1757,7 +1757,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
                   listener.newSearcher(newSearcher, null);
                 }
               } catch (Throwable e) {
-                SolrException.log(log, null, e);
+                SolrException.log(log, e);
                 if (e instanceof Error) {
                   throw (Error) e;
                 }
@@ -1776,7 +1776,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
                   listener.newSearcher(newSearcher, currSearcher);
                 }
               } catch (Throwable e) {
-                SolrException.log(log, null, e);
+                SolrException.log(log, e);
                 if (e instanceof Error) {
                   throw (Error) e;
                 }
@@ -2056,7 +2056,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
   final public static void log(Throwable e) {
-    SolrException.log(log,null,e);
+    SolrException.log(log,e);
   }
 
   
@@ -2114,7 +2114,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       } catch (Exception ex) {
           SolrException e = new SolrException
             (SolrException.ErrorCode.SERVER_ERROR, "QueryResponseWriter init failure", ex);
-          SolrException.log(log,null,e);
+          SolrException.log(log,e);
           throw e;
       }
     }
