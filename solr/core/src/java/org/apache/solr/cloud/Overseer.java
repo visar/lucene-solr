@@ -295,6 +295,7 @@ public class Overseer {
     }
 
     private void checkIfIamStillLeader() {
+      if (this.isClosed) return; // we've already closed shop, don't bother
       org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
       String path = "/overseer_elect/leader";
       byte[] data = null;
