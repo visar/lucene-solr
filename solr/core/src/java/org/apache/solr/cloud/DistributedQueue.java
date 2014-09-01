@@ -96,6 +96,7 @@ public class DistributedQueue {
     TreeMap<Long,String> orderedChildren = new TreeMap<>();
 
     List<String> childNames = zookeeper.getChildren(dir, watcher, true);
+    stats.setQueueLength(childNames.size());
     for (String childName : childNames) {
       try {
         // Check format
