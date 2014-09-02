@@ -250,20 +250,11 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   @Override
-  public void checkDistributed(ResponseBuilder rb) {
-    SolrQueryRequest req = rb.req;
-    SolrParams params = req.getParams();
-
-    rb.isDistrib = params.getBool("distrib", req.getCore().getCoreDescriptor()
-        .getCoreContainer().isZooKeeperAware());
-    String shards = params.get(ShardParams.SHARDS);
-
-    // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
-    // search is distributed.
-    boolean hasShardURL = shards != null && shards.indexOf('/') > 0;
-    rb.isDistrib = hasShardURL | rb.isDistrib;
+  public void prepDistributed(ResponseBuilder rb) {
+    final SolrQueryRequest req = rb.req;
+    final SolrParams params = req.getParams();
+    final String shards = params.get(ShardParams.SHARDS);
     
-    if (rb.isDistrib) {
       // since the cost of grabbing cloud state is still up in the air, we grab it only
       // if we need it.
       ClusterState clusterState = null;
@@ -407,15 +398,14 @@ public class HttpShardHandler extends ShardHandler {
           }
         }
       }
-    }
-    String shards_rows = params.get(ShardParams.SHARDS_ROWS);
-    if(shards_rows != null) {
-      rb.shards_rows = Integer.parseInt(shards_rows);
-    }
-    String shards_start = params.get(ShardParams.SHARDS_START);
-    if(shards_start != null) {
-      rb.shards_start = Integer.parseInt(shards_start);
-    }
+      String shards_rows = params.get(ShardParams.SHARDS_ROWS);
+      if(shards_rows != null) {
+        rb.shards_rows = Integer.parseInt(shards_rows);
+      }
+      String shards_start = params.get(ShardParams.SHARDS_START);
+      if(shards_start != null) {
+        rb.shards_start = Integer.parseInt(shards_start);
+      }
   }
 
 
