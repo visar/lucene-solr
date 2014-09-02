@@ -83,6 +83,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -209,15 +210,17 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
   
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
-    if( abortErrorMessage != null ) {
-      ((HttpServletResponse)response).sendError( 500, abortErrorMessage );
+
+    if (abortErrorMessage != null) {
+      sendError((HttpServletResponse) response, 500, abortErrorMessage);
       return;
     }
-    
+
     if (this.cores == null) {
-      ((HttpServletResponse)response).sendError( 503, "Server is shutting down or failed to initialize" );
+      sendError((HttpServletResponse) response, 503, "Server is shutting down or failed to initialize");
       return;
     }
+
     CoreContainer cores = this.cores;
     SolrCore core = null;
     SolrQueryRequest solrReq = null;
@@ -314,7 +317,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         
         if (core == null && cores.isZooKeeperAware()) {
           // we couldn't find the core - lets make sure a collection was not specified instead
-          core = getCoreByCollection(cores, corename, path);
+          core = getCoreByCollection(cores, corename);
           
           if (core != null) {
             // we found a core, update the path
@@ -516,7 +519,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       String queryString = req.getQueryString();
       
       urlstr += queryString == null ? "" : "?" + queryString;
-      
+
       URL url = new URL(urlstr);
       boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
 
@@ -630,10 +633,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       boolean byCoreName, boolean activeReplicas) {
     String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
-    Iterator<Slice> it = slices.iterator();
-    while (it.hasNext()) {
-      Slice slice = it.next();
-      Map<String,Replica> sliceShards = slice.getReplicasMap();
+    for (Slice slice : slices) {
+      Map<String, Replica> sliceShards = slice.getReplicasMap();
       for (ZkNodeProps nodeProps : sliceShards.values()) {
         ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
         if (!activeReplicas || (liveNodes.contains(coreNodeProps.getNodeName())
@@ -676,13 +677,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
     return slices;
   }
-  
-  private SolrCore getCoreByCollection(CoreContainer cores, String corename, String path) {
-    String collection = corename;
+
+  private SolrCore getCoreByCollection(CoreContainer cores, String corename) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     
     ClusterState clusterState = zkStateReader.getClusterState();
-    Map<String,Slice> slices = clusterState.getActiveSlicesMap(collection);
+    Map<String,Slice> slices = clusterState.getActiveSlicesMap(corename);
     if (slices == null) {
       return null;
     }
@@ -692,9 +692,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     done:
     for (Entry<String,Slice> entry : entries) {
       // first see if we have the leader
-      ZkNodeProps leaderProps = clusterState.getLeader(collection, entry.getKey());
+      ZkNodeProps leaderProps = clusterState.getLeader(corename, entry.getKey());
       if (leaderProps != null) {
-        core = checkProps(cores, path, leaderProps);
+        core = checkProps(cores, leaderProps);
       }
       if (core != null) {
         break done;
@@ -705,7 +705,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       Set<Entry<String,Replica>> shardEntries = shards.entrySet();
       for (Entry<String,Replica> shardEntry : shardEntries) {
         Replica zkProps = shardEntry.getValue();
-        core = checkProps(cores, path, zkProps);
+        core = checkProps(cores, zkProps);
         if (core != null) {
           break done;
         }
@@ -714,8 +714,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     return core;
   }
 
-  private SolrCore checkProps(CoreContainer cores, String path,
-      ZkNodeProps zkProps) {
+  private SolrCore checkProps(CoreContainer cores, ZkNodeProps zkProps) {
     String corename;
     SolrCore core = null;
     if (cores.getZkController().getNodeName().equals(zkProps.getStr(ZkStateReader.NODE_NAME_PROP))) {
@@ -742,34 +741,38 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private void writeResponse(SolrQueryResponse solrRsp, ServletResponse response,
                              QueryResponseWriter responseWriter, SolrQueryRequest solrReq, Method reqMethod)
           throws IOException {
+    try {
+      // Now write it out
+      final String ct = responseWriter.getContentType(solrReq, solrRsp);
+      // don't call setContentType on null
+      if (null != ct) response.setContentType(ct);
 
-    // Now write it out
-    final String ct = responseWriter.getContentType(solrReq, solrRsp);
-    // don't call setContentType on null
-    if (null != ct) response.setContentType(ct); 
-
-    if (solrRsp.getException() != null) {
-      NamedList info = new SimpleOrderedMap();
-      int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
-      solrRsp.add("error", info);
-      ((HttpServletResponse) response).setStatus(code);
-    }
-    
-    if (Method.HEAD != reqMethod) {
-      if (responseWriter instanceof BinaryQueryResponseWriter) {
-        BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
-        binWriter.write(response.getOutputStream(), solrReq, solrRsp);
-      } else {
-        String charset = ContentStreamBase.getCharsetFromContentType(ct);
-        Writer out = (charset == null)
-          ? new OutputStreamWriter(response.getOutputStream(), UTF8)
-          : new OutputStreamWriter(response.getOutputStream(), charset);
-        out = new FastWriter(out);
-        responseWriter.write(out, solrReq, solrRsp);
-        out.flush();
+      if (solrRsp.getException() != null) {
+        NamedList info = new SimpleOrderedMap();
+        int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
+        solrRsp.add("error", info);
+        ((HttpServletResponse) response).setStatus(code);
       }
+
+      if (Method.HEAD != reqMethod) {
+        if (responseWriter instanceof BinaryQueryResponseWriter) {
+          BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
+          binWriter.write(response.getOutputStream(), solrReq, solrRsp);
+        } else {
+          String charset = ContentStreamBase.getCharsetFromContentType(ct);
+          Writer out = (charset == null)
+              ? new OutputStreamWriter(response.getOutputStream(), UTF8)
+              : new OutputStreamWriter(response.getOutputStream(), charset);
+          out = new FastWriter(out);
+          responseWriter.write(out, solrReq, solrRsp);
+          out.flush();
+        }
+      }
+      //else http HEAD request, nothing to write out, waited this long just to get ContentType
     }
-    //else http HEAD request, nothing to write out, waited this long just to get ContentType
+    catch (EOFException e) {
+      log.info("Unable to write response, client closed connection or we are shutting down", e);
+    }
   }
   
   protected void execute( HttpServletRequest req, SolrRequestHandler handler, SolrQueryRequest sreq, SolrQueryResponse rsp) {
@@ -780,7 +783,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     sreq.getCore().execute( handler, sreq, rsp );
   }
 
-  protected void sendError(SolrCore core, 
+  private void sendError(HttpServletResponse response, int code, String message) throws IOException {
+    try {
+      response.sendError(code, message);
+    }
+    catch (EOFException e) {
+      log.info("Unable to write error response, client closed connection or we are shutting down", e);
+    }
+  }
+
+  protected void sendError(SolrCore core,
       SolrQueryRequest req, 
       ServletRequest request, 
       HttpServletResponse response, 
@@ -821,7 +833,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         if (exp != null) {
           SimpleOrderedMap info = new SimpleOrderedMap();
           int code = ResponseUtils.getErrorInfo(ex, info, log);
-          response.sendError(code, info.toString());
+          sendError(response, code, info.toString());
         }
       } finally {
         if (core == null && localCore != null) {
