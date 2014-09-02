@@ -98,7 +98,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAware {
-  
+
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationHandler.class.getName());
   SolrCore core;
 
@@ -792,8 +792,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (clzz == List.class) {
       String ss[] = s.split(",");
       List<String> l = new ArrayList<>();
-      for (int i = 0; i < ss.length; i++) {
-        l.add(new Date(Long.valueOf(ss[i])).toString());
+      for (String s1 : ss) {
+        l.add(new Date(Long.valueOf(s1)).toString());
       }
       nl.add(key, l);
     } else {
@@ -1163,7 +1163,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           int read = (int) Math.min(buf.length, filelen - offset);
           in.readBytes(buf, 0, read);
           
-          fos.writeInt((int) read);
+          fos.writeInt(read);
           if (useChecksum) {
             checksum.reset();
             checksum.update(buf, 0, read);
@@ -1171,6 +1171,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           }
           fos.write(buf, 0, read);
           fos.flush();
+          LOG.debug("Wrote {} bytes ({} packets) for file {}", offset + read, packetsWritten, fileName);
           if (indexGen != null && (packetsWritten % 5 == 0)) {
             // after every 5 packets reserve the commitpoint for some time
             delPolicy.setReserveDuration(indexGen, reserveCommitDuration);
@@ -1242,7 +1243,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
         File file = null;
   
-        //if if is a conf file read from config diectory
+        //if if is a conf file read from config directory
         file = new File(core.getResourceLoader().getConfigDir(), cfileName);
 
         if (file.exists() && file.canRead()) {
@@ -1372,7 +1373,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    * Boolean param for tests that can be specified when using 
    * {@link #CMD_FETCH_INDEX} to force the current request to block until 
    * the fetch is complete.  <b>NOTE:</b> This param is not advised for 
-   * non-test code, since the the durration of the fetch for non-trivial
+   * non-test code, since the the duration of the fetch for non-trivial
    * indexes will likeley cause the request to time out.
    *
    * @lucene.internal
