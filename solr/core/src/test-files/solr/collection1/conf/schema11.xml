@@ -344,6 +344,7 @@ valued. -->
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
    <dynamicField name="*_ss"  type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
+   <dynamicField name="*_dv_s"  type="string"  indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_ii"  type="integer"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_i"  type="sint"    indexed="true"  stored="true"/>
    <dynamicField name="*_is"  type="sint"    indexed="true"  stored="true" multiValued="true"/>
