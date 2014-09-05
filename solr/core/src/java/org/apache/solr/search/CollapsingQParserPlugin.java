@@ -418,7 +418,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         Arrays.sort(boostOrds);
       }
       this.values = values;
-      int valueCount = values.getValueCount();
+      int valueCount = (values == null ? 0 : values.getValueCount());
       this.ords = new int[valueCount];
       Arrays.fill(this.ords, -1);
       this.scores = new float[valueCount];
@@ -559,7 +559,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.maxDoc = maxDoc;
       this.contexts = new AtomicReaderContext[segments];
       this.values = values;
-      int valueCount = values.getValueCount();
+      int valueCount = (values == null ? 0 : values.getValueCount());
       this.nullPolicy = nullPolicy;
       this.needsScores = needsScores;
       this.boostDocs = boostDocs;
