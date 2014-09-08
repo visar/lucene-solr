@@ -812,6 +812,10 @@ public class QueryComponent extends SearchComponent
     sreq.params = new ModifiableSolrParams(rb.req.getParams());
     // TODO: base on current params or original params?
 
+    if (rb.onePassDistributedQuery) {
+      sreq.params.set(ShardParams.DISTRIB_SINGLE_PASS, true);
+    }
+    
     // don't pass through any shards param
     sreq.params.remove(ShardParams.SHARDS);
 

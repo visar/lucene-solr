@@ -85,6 +85,7 @@ import java.util.Map;
  */
 public class ExpandComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware {
   public static final String COMPONENT_NAME = "expand";
+  private static final int finishingStage = ResponseBuilder.STAGE_GET_FIELDS;
   private PluginInfo info = PluginInfo.EMPTY_INFO;
 
   @Override
@@ -115,10 +116,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
 
-    boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
-    String ids = params.get(ShardParams.IDS);
-
-    if (ids == null && isShard) {
+    if (params.getBool(ShardParams.IS_SHARD, false) &&
+        params.get(ShardParams.IDS) == null &&
+        !params.getBool(ShardParams.DISTRIB_SINGLE_PASS, false)) {
       return;
     }
 
@@ -246,6 +246,16 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   }
 
   @Override
+  public int distributedProcess(ResponseBuilder rb) throws IOException {
+
+    if (rb.doExpand && rb.stage < finishingStage) {
+      return finishingStage;
+    }
+    
+      return ResponseBuilder.STAGE_DONE;
+  }
+    
+  @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
 
   }
@@ -285,7 +295,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return;
     }
 
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.stage != finishingStage) {
       return;
     }
 
