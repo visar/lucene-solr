@@ -45,6 +45,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ExpandParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -212,7 +213,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     searcher.search(query, pfilter.filter, collector);
     IntObjectOpenHashMap groups = groupExpandCollector.getGroups();
     Iterator<IntObjectCursor> it = groups.iterator();
-    Map<String, DocSlice> outMap = new HashMap();
+    Map<String, Object> outMap = new HashMap();
     BytesRef bytesRef = new BytesRef();
     CharsRef charsRef = new CharsRef();
     FieldType fieldType = searcher.getSchema().getField(field).getType();
@@ -239,11 +240,32 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
     }
 
-    rb.rsp.add("expanded", outMap);
+    addExpandedMap(rb, outMap);
   }
+
+  private static void addExpandedMap(ResponseBuilder rb, Map<String,Object> map) {
+    if (rb.req.getParams().getBool(ExpandParams.EXPAND_LIST,false))
+    {
+      List<NamedList> list = new ArrayList<>(map.size());
+      for (Map.Entry<String,Object> entry : map.entrySet()) {
+        NamedList<Object> nl = new SimpleOrderedMap<>();
+        nl.add("groupValue",  entry.getKey());
+        nl.add("doclist",  entry.getValue());
+        list.add(nl);              
+      }
+      rb.rsp.add("expanded", list);
+    }
+    else
+    {
+      rb.rsp.add("expanded", map);
+    }
+  }    
+        
         @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
-
+    if (rb.doExpand) {
+      sreq.params.remove(ExpandParams.EXPAND_LIST);
+    }
   }
         @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
@@ -289,7 +311,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       expanded = new HashMap();
     }
 
-    rb.rsp.add("expanded", expanded);
+    addExpandedMap(rb, expanded);
   }
 
   private class GroupExpandCollector extends Collector {
