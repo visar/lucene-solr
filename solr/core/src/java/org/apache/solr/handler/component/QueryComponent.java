@@ -119,6 +119,13 @@ public class QueryComponent extends SearchComponent
     }
     SolrQueryResponse rsp = rb.rsp;
 
+    if (params.get(ShardParams.IDS) != null &&
+        params.get(CommonParams.Q) == null &&
+        params.get(CommonParams.FQ) == null) {
+      // just a plain get-fields query, nothing to prepare for that
+      return;
+    }
+    
     // Set field flags    
     ReturnFields returnFields = new SolrReturnFields( req );
     rsp.setReturnFields( returnFields );
@@ -261,18 +268,6 @@ public class QueryComponent extends SearchComponent
     }
     SolrIndexSearcher searcher = req.getSearcher();
 
-    if (rb.getQueryCommand().getOffset() < 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'start' parameter cannot be negative");
-    }
-
-    // -1 as flag if not set.
-    long timeAllowed = (long)params.getInt( CommonParams.TIME_ALLOWED, -1 );
-    if (null != rb.getCursorMark() && 0 < timeAllowed) {
-      // fundementally incompatible
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not search using both " + 
-                              CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
-    }
-
     // Optional: This could also be implemented by the top-level searcher sending
     // a filter that lists the ids... that would be transparent to
     // the request handler, but would be more expensive (and would preserve score
@@ -307,6 +302,18 @@ public class QueryComponent extends SearchComponent
       ctx.query = null; // anything?
       rsp.add("response", ctx);
       return;
+    }
+
+    if (rb.getQueryCommand().getOffset() < 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'start' parameter cannot be negative");
+    }
+
+    // -1 as flag if not set.
+    long timeAllowed = (long)params.getInt( CommonParams.TIME_ALLOWED, -1 );
+    if (null != rb.getCursorMark() && 0 < timeAllowed) {
+      // fundementally incompatible
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not search using both " + 
+                              CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
     }
 
     SolrIndexSearcher.QueryCommand cmd = rb.getQueryCommand();
@@ -1122,6 +1129,11 @@ public class QueryComponent extends SearchComponent
       // we already have the field sort values
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);
 
+      if (!rb.isNeedDocSet()) {
+        sreq.params.remove(CommonParams.Q);        
+        sreq.params.remove(CommonParams.FQ);        
+      }
+      
       if(!rb.rsp.getReturnFields().wantsField(uniqueField.getName())) {
         sreq.params.add(CommonParams.FL, uniqueField.getName());
       }

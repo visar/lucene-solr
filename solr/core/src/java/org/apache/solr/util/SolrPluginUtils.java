@@ -312,8 +312,10 @@ public class SolrPluginUtils {
       * values, use regular toString to see any attributes of the
       * underlying Query it may have missed.
       */
-      dbg.add("parsedquery", QueryParsing.toString(query, req.getSchema()));
-      dbg.add("parsedquery_toString", query.toString());
+      if (query != null) {
+        dbg.add("parsedquery", QueryParsing.toString(query, req.getSchema()));
+        dbg.add("parsedquery_toString", query.toString());
+      }
     }
   }
   
@@ -329,7 +331,7 @@ public class SolrPluginUtils {
       IndexSchema schema = searcher.getSchema();
       boolean explainStruct = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
 
-      if (results != null) {
+      if (results != null && query != null) {
         NamedList<Explanation> explain = getExplanations(query, results, searcher, schema);
         dbg.add("explain", explainStruct
             ? explanationsToNamedLists(explain)
