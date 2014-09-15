@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -67,13 +68,10 @@ public final class CommitTracker implements Runnable {
   private final boolean openSearcher;
   private final boolean waitSearcher = true;
 
-  private String name;
-  
   public CommitTracker(String name, SolrCore core, int docsUpperBound, int timeUpperBound, boolean openSearcher, boolean softCommit) {
     this.core = core;
-    this.name = name;
     pending = null;
-    
+
     this.docsUpperBound = docsUpperBound;
     this.timeUpperBound = timeUpperBound;
     
@@ -214,6 +212,8 @@ public final class CommitTracker implements Runnable {
       autoCommitCount.incrementAndGet();
 
       core.getUpdateHandler().commit(command);
+    } catch (ThreadInterruptedException e) {
+      log.info("Auto commit interrupted for core: {}", core.getName());
     } catch (Exception e) {
       SolrException.log(log, "auto commit error...", e);
     } finally {
