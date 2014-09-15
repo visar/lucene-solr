@@ -357,6 +357,7 @@ public class DebugComponent extends SearchComponent
                 String id = sexplain.getName(i);
                 // TODO: lookup won't work for non-string ids... String vs Float
                 ShardDoc sdoc = rb.resultIds.get(id);
+                if (sdoc == null) continue;
                 int idx = sdoc.positionInResponse;
                 arr[idx] = new NamedList.NamedListEntry<>(id, sexplain.getVal(i));
               }
