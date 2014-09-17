@@ -737,7 +737,7 @@ public class MemoryIndex {
      * (which would be an alternative and somewhat more elegant approach,
      * apart from more sophisticated Tries / prefix trees).
      */
-    public void sortTerms() {
+    public synchronized void sortTerms() {
       if (sortedTerms == null) 
         sortedTerms = terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
     }
