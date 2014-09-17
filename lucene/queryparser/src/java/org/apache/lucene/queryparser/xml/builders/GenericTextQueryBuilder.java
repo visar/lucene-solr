@@ -57,6 +57,7 @@ public class GenericTextQueryBuilder implements QueryBuilder {
 
       PhraseQuery pq = null;//this will be instantiated only if the query results in multiple terms
       Term firstTerm = null;//Keeps the first Term in the query and if there are more terms found then this will be consumed by above PhraseQuery
+      int firstPosition = 0;
 
       TokenStream source = null;
       try {
@@ -73,26 +74,33 @@ public class GenericTextQueryBuilder implements QueryBuilder {
               + "token stream has no TermToBytesRefAttribute. field:" + field
               + ", phrase:" + text);
 
-          int positionIncrement = 1;
+          PositionIncrementAttribute posIncrAtt = null;
+          if (source.hasAttribute(PositionIncrementAttribute.class)) {
+              posIncrAtt = source.getAttribute(PositionIncrementAttribute.class);
+          }
+
           int position = -1;
           while (source.incrementToken()) {
               termAtt.fillBytesRef();
               Term t = new Term(field, BytesRef.deepCopyOf(bytes));
+              
+              int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
+              if (positionIncrement <= 0) 
+                positionIncrement = 1;
+              
+              position += positionIncrement;
+
               if (null == firstTerm) {
                 firstTerm = t;
+                firstPosition = position;
                 continue;
               }
+
               if (pq == null) {
-                if (source.hasAttribute(PositionIncrementAttribute.class)) {
-                PositionIncrementAttribute posIncrAtt = source.getAttribute(PositionIncrementAttribute.class);
-                positionIncrement = posIncrAtt.getPositionIncrement();
-                if (positionIncrement <= 0) positionIncrement = 1;
-                }
                 pq = new PhraseQuery();
-                position += positionIncrement;
-                pq.add(firstTerm, position);
+                pq.add(firstTerm, firstPosition);
               }
-              position += positionIncrement;
+              
               pq.add(t, position);
             }
 

@@ -15,6 +15,5 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<!-- this is a query with some stop words in it and will result in a PhraseQuery. 
-Stop words "to" and "and" should not cause an issue of matching "bankers <some stop word> dealers"-->
-<GenericTextQuery fieldName="contents" boost="0.6">to bankers and dealers</GenericTextQuery>
+<!-- This query contains only stop words. Standard tokenizer would remove all the stop words and this would result in an empty query-->
+<GenericTextQuery fieldName="contents" boost="0.6">and to a</GenericTextQuery>

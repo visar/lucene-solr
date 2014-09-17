@@ -67,18 +67,18 @@ public class PhraseQueryBuilder implements QueryBuilder {
                 + "token stream has no TermToBytesRefAttribute. field:" + field
                 + ", phrase:" + phrase);
 
-            int positionIncrement = 1;
+            PositionIncrementAttribute posIncrAtt = null;
             if (source.hasAttribute(PositionIncrementAttribute.class)) {
-                PositionIncrementAttribute posIncrAtt = source.getAttribute(PositionIncrementAttribute.class);
-                positionIncrement = posIncrAtt.getPositionIncrement();
-                if (positionIncrement <= 0) positionIncrement = 1;
+                posIncrAtt = source.getAttribute(PositionIncrementAttribute.class);
             }
 
             int position = -1;
             while (source.incrementToken()) {
-                position += positionIncrement;
-                termAtt.fillBytesRef();
-                pq.add(new Term(field, BytesRef.deepCopyOf(bytes)), position);
+              int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
+              if (positionIncrement <= 0) positionIncrement = 1;
+              position += positionIncrement;
+              termAtt.fillBytesRef();
+              pq.add(new Term(field, BytesRef.deepCopyOf(bytes)), position);
             }
 
             source.end();
