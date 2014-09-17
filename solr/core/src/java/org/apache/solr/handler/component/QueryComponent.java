@@ -301,7 +301,6 @@ public class QueryComponent extends SearchComponent
       ctx.docs = rb.getResults().docList;
       ctx.query = null; // anything?
       rsp.add("response", ctx);
-      rsp.getToLog().add("docs", docs);
       return;
     }
 
