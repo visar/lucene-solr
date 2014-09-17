@@ -284,9 +284,15 @@ public class TestParser extends LuceneTestCase {
   
   public void testGenericTextQueryWithStopwordsXML() throws Exception {
     Query q = parse("GenericTextQueryStopwords.xml");
+    assertTrue("Expecting a PhraseQuery, but resulted in " + q.getClass(), q instanceof PhraseQuery);
+    dumpResults("GenericTextQuery with stopwords", q, 5);
+  }
+  
+  public void testGenericTextQueryWithAllStopwordsXML() throws Exception {
+    Query q = parse("GenericTextQueryAllStopwords.xml");
     if (builder.analyzer instanceof StandardAnalyzer)
       assertTrue("Expecting a MatchAllDocsQuery, but resulted in " + q.getClass(), q instanceof MatchAllDocsQuery);
-    dumpResults("GenericTextQuery with stopwords", q, 5);
+    dumpResults("GenericTextQuery with just stopwords", q, 5);
   }
   
   public void testGenericTextQueryWithNoTextXML() throws Exception {
