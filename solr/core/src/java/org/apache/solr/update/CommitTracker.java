@@ -213,7 +213,7 @@ public final class CommitTracker implements Runnable {
 
       core.getUpdateHandler().commit(command);
     } catch (ThreadInterruptedException e) {
-      log.info("Auto commit interrupted for core: {}", core.getName());
+      log.info("Auto commit interrupted for core: {}", core.getName(), e);
     } catch (Exception e) {
       SolrException.log(log, "auto commit error...", e);
     } finally {
