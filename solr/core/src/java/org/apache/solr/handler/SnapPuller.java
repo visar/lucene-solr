@@ -414,15 +414,15 @@ public class SnapPuller {
         boolean reloadCore = false;
         
         try {
-          LOG.info("Starting download to " + tmpIndexDir + " fullCopy="
-              + isFullCopyNeeded);
+          LOG.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
           successfulInstall = false;
           
-          downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir,
+          long bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir,
               latestGeneration);
-          LOG.info("Total time taken for download : "
-              + ((System.currentTimeMillis() - replicationStartTime) / 1000)
-              + " secs");
+          long timeTakenSeconds = ((System.currentTimeMillis() - replicationStartTime) / 1000);
+          Long bytesDownloadedPerSecond = (timeTakenSeconds != 0 ? new Long(bytesDownloaded/timeTakenSeconds) : null);
+          LOG.info("Total time taken for download (fullCopy={},bytesDownloaded={}) : {} secs ({} bytes/sec) to {}",
+              isFullCopyNeeded, bytesDownloaded, timeTakenSeconds, bytesDownloadedPerSecond, tmpIndexDir);
           Collection<Map<String,Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
           if (!modifiedConfFiles.isEmpty()) {
             downloadConfFiles(confFilesToDownload, latestGeneration);
@@ -750,13 +750,16 @@ public class SnapPuller {
    * @param tmpIndexDir              the directory to which files need to be downloadeed to
    * @param indexDir                 the indexDir to be merged to
    * @param latestGeneration         the version number
+   * 
+   * @return number of bytes downloaded
    */
-  private void downloadIndexFiles(boolean downloadCompleteIndex,
+  private long downloadIndexFiles(boolean downloadCompleteIndex,
       Directory indexDir, Directory tmpIndexDir, long latestGeneration)
       throws Exception {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Download files to dir: " + Arrays.asList(indexDir.listAll()));
     }
+    long bytesDownloaded = 0;
     for (Map<String,Object> file : filesToDownload) {
       if (!slowFileExists(indexDir, (String) file.get(NAME))
           || downloadCompleteIndex) {
@@ -764,12 +767,14 @@ public class SnapPuller {
             (String) file.get(NAME), false, latestGeneration);
         currentFile = file;
         dirFileFetcher.fetchFile();
+        bytesDownloaded += dirFileFetcher.getBytesDownloaded();
         filesDownloaded.add(new HashMap<>(file));
       } else {
         LOG.info("Skipping download for " + file.get(NAME)
             + " because it already exists");
       }
     }
+    return bytesDownloaded;
   }
 
   /** Returns true if the file exists (can be opened), false
