@@ -20,6 +20,7 @@ package org.apache.lucene.util.fst;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+//import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -74,7 +75,7 @@ class BytesStore extends DataOutput implements Accountable {
     long left = numBytes;
     while(left > 0) {
       final int chunk = (int) Math.min(blockSize, left);
-      // todo: optimize this
+      // TODO: Ideally this should use ByteBuffer, would require DataInput interface change
       byte[] block = new byte[chunk];
       in.readBytes(block, 0, block.length);
       blocks.add(ByteBuffer.wrap(block));
@@ -89,18 +90,22 @@ class BytesStore extends DataOutput implements Accountable {
   /** Absolute write byte; you must ensure dest is < max
    *  position written so far. */
   public void writeByte(int dest, byte b) {
+    //System.out.println(this + "  BS.writeByte: dest=" + dest + " byte=" + b);
     int blockIndex = dest >> blockBits;
     ByteBuffer block = blocks.get(blockIndex);
     block.put(dest & blockMask, b);
   }
 
-  private int safePos(ByteBuffer buffer) {
-    return (buffer == null ? blockSize : buffer.position());
+  private int curPos() {
+    if (current != null) return current.position();
+    if (blocks.isEmpty()) return blockSize;
+    return blocks.get(blocks.size()-1).position();
   }
 
   @Override
   public void writeByte(byte b) {
-    if (safePos(current) == blockSize) {
+    //System.out.println(this + "  BS.writeByte: byte=" + b);
+    if (curPos() == blockSize) {
       addBlock();
     }
     current.put(b);
@@ -108,8 +113,9 @@ class BytesStore extends DataOutput implements Accountable {
 
   @Override
   public void writeBytes(byte[] b, int offset, int len) {
+    //System.out.println(this + "  BS.writeBytes: offset=" + offset + " len=" + len + " bytes=" + Arrays.toString(b));
     while (len > 0) {
-      int chunk = blockSize - safePos(current);
+      int chunk = blockSize - curPos();
       if (len <= chunk) {
         current.put(b, offset, len);
         break;
@@ -144,7 +150,7 @@ class BytesStore extends DataOutput implements Accountable {
    *  position.  Note: this cannot "grow" the bytes, so you
    *  must only call it on already written parts. */
   void writeBytes(long dest, ByteBuffer buffer, int offset, int len) {
-    //System.out.println("  BS.writeBytes dest=" + dest + " offset=" + offset + " len=" + len);
+    //System.out.println(this + "  BS.writeBytes dest=" + dest + " offset=" + offset + " len=" + len);
     assert dest + len <= getPosition(): "dest=" + dest + " pos=" + getPosition() + " len=" + len;
 
     // Note: weird: must go "backwards" because copyBytes
@@ -185,12 +191,11 @@ class BytesStore extends DataOutput implements Accountable {
     }
   }
 
-  // todo: optimize this
   /** Absolute copy bytes self to self, without changing the
    *  position. Note: this cannot "grow" the bytes, so must
    *  only call it on already written parts. */
   public void copyBytes(long src, long dest, int len) {
-    //System.out.println("BS.copyBytes src=" + src + " dest=" + dest + " len=" + len);
+    //System.out.println(this + "  BS.copyBytes src=" + src + " dest=" + dest + " len=" + len);
     assert src < dest;
 
     // Note: weird: must go "backwards" because copyBytes
@@ -212,7 +217,7 @@ class BytesStore extends DataOutput implements Accountable {
       //System.out.println("  cycle downTo=" + downTo);
       if (len <= downTo) {
         //System.out.println("    finish");
-        writeBytes(dest, block, downTo-len, len);
+        writeBytes(dest, block, downTo - len, len);
         break;
       } else {
         //System.out.println("    partial");
@@ -247,7 +252,7 @@ class BytesStore extends DataOutput implements Accountable {
   public void reverse(long srcPos, long destPos) {
     assert srcPos < destPos;
     assert destPos < getPosition();
-    //System.out.println("reverse src=" + srcPos + " dest=" + destPos);
+    //System.out.println(this + "  BS.reverse src=" + srcPos + " dest=" + destPos);
 
     int srcBlockIndex = (int) (srcPos >> blockBits);
     int src = (int) (srcPos & blockMask);
@@ -283,8 +288,9 @@ class BytesStore extends DataOutput implements Accountable {
   }
 
   public void skipBytes(int len) {
+    //System.out.println(this + "  BS.skipBytes: len=" + len);
     while (len > 0) {
-      int chunk = blockSize - safePos(current);
+      int chunk = blockSize - curPos();
       if (len <= chunk) {
         current.position(current.position() + len);
         break;
@@ -296,7 +302,7 @@ class BytesStore extends DataOutput implements Accountable {
   }
 
   public long getPosition() {
-    return ((long) blocks.size()-1) * blockSize + safePos(current);
+    return ((long) blocks.size()-1) * blockSize + curPos();
   }
 
   /** Pos must be less than the max position written so far!
@@ -321,6 +327,7 @@ class BytesStore extends DataOutput implements Accountable {
   }
 
   public void finish() {
+    //System.out.println(this + "  BS.finish()");
     if (current != null) {
       current.limit(current.position());
       current = null;
@@ -343,27 +350,34 @@ class BytesStore extends DataOutput implements Accountable {
 
   /** Writes all of our bytes to the target {@link DataOutput}. */
   public void writeTo(DataOutput out) throws IOException {
+    //System.out.println(this + "  BS.writeTo: to: " + out);
     for(ByteBuffer block : blocks) {
       byte[] blockArray = byteBufferToArray(block);
+      //System.out.println("    writing: bytes=" + blockArray.length + ", array=" + Arrays.toString(blockArray));
       out.writeBytes(blockArray, 0, blockArray.length);
     }
   }
 
   public FST.BytesReader getForwardReader() {
+    //System.out.println(this + "  BS.getForwardReader");
     if (blocks.size() == 1) {
       return new ForwardBytesReader(blocks.get(0));
     }
     return new FST.BytesReader() {
-      private ByteBuffer current;
+      private ByteBuffer curBuf;
       private int nextBuffer;
+
+      private int curPos() {
+        return (curBuf == null ? blockSize : curBuf.position());
+      }
 
       @Override
       public byte readByte() {
-        if (safePos(current) == blockSize) {
-          current = blocks.get(nextBuffer++).asReadOnlyBuffer();
-          current.position(0);
+        if (curPos() == blockSize) {
+          curBuf = blocks.get(nextBuffer++).asReadOnlyBuffer();
+          curBuf.position(0);
         }
-        return current.get();
+        return curBuf.get();
       }
 
       @Override
@@ -374,33 +388,33 @@ class BytesStore extends DataOutput implements Accountable {
       @Override
       public void readBytes(byte[] b, int offset, int len) {
         while(len > 0) {
-          int chunkLeft = blockSize - safePos(current);
+          int chunkLeft = blockSize - curPos();
           if (len <= chunkLeft) {
-            current.get(b, offset, len);
+            curBuf.get(b, offset, len);
             break;
           } else {
             if (chunkLeft > 0) {
-              current.get(b, offset, chunkLeft);
+              curBuf.get(b, offset, chunkLeft);
               offset += chunkLeft;
               len -= chunkLeft;
             }
-            current = blocks.get(nextBuffer++).asReadOnlyBuffer();
-            current.position(0);
+            curBuf = blocks.get(nextBuffer++).asReadOnlyBuffer();
+            curBuf.position(0);
           }
         }
       }
 
       @Override
       public long getPosition() {
-        return ((long) nextBuffer-1)*blockSize + safePos(current);
+        return ((long) nextBuffer-1)*blockSize + curPos();
       }
 
       @Override
       public void setPosition(long pos) {
         int bufferIndex = (int) (pos >> blockBits);
         nextBuffer = bufferIndex+1;
-        current = blocks.get(bufferIndex).asReadOnlyBuffer();
-        current.position((int) (pos & blockMask));
+        curBuf = blocks.get(bufferIndex).asReadOnlyBuffer();
+        curBuf.position((int) (pos & blockMask));
         assert getPosition() == pos;
       }
 
@@ -486,6 +500,8 @@ class BytesStore extends DataOutput implements Accountable {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(numBlocks=" + blocks.size() + ")";
+    return getClass().getSimpleName() +
+        "[" + Integer.toHexString(System.identityHashCode(this)) + "]" +
+        "(numBlocks=" + blocks.size() + " pos=" + getPosition() + ")";
   }
 }

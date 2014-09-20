@@ -54,7 +54,7 @@ public class TestReaderClosed extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
   }
-  
+
   public void test() throws Exception {
     assertTrue(reader.getRefCount() > 0);
     IndexSearcher searcher = newSearcher(reader);
