@@ -67,7 +67,7 @@
     </subant>
   </target>
 
-  <target name="beast" description="Run unit tests in a loop">
+  <target name="beast">
     <fail message="The Beast only works inside of individual modules"/>
   </target>
 
