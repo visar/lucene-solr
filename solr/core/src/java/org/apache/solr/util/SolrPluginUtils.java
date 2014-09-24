@@ -312,8 +312,10 @@ public class SolrPluginUtils {
       * values, use regular toString to see any attributes of the
       * underlying Query it may have missed.
       */
-      dbg.add("parsedquery", QueryParsing.toString(query, req.getSchema()));
-      dbg.add("parsedquery_toString", query.toString());
+      if (query != null) {
+        dbg.add("parsedquery", QueryParsing.toString(query, req.getSchema()));
+        dbg.add("parsedquery_toString", query.toString());
+      }
     }
   }
   
