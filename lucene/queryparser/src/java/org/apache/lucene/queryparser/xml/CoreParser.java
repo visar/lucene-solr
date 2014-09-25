@@ -98,6 +98,8 @@ public class CoreParser implements QueryBuilder {
     //GenericTextQuery is a error tolerant version of PhraseQuery
     queryFactory.addBuilder("GenericTextQuery", new GenericTextQueryBuilder(analyzer));
 
+    queryFactory.addBuilder("ComplexPhraseQuery", new ComplexPhraseQueryBuilder(analyzer));
+
     filterFactory.addBuilder("CachedFilter", new CachedFilterBuilder(queryFactory,
         filterFactory, maxNumCachedFilters));
 
