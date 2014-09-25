@@ -70,6 +70,12 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     checkMatches("\"john  nosuchword*\"", ""); // phrases with clauses producing
     // empty sets
 
+    checkMatches("\"john*\"", "1,3"); // Simple prefix query works
+    checkMatches("\"joh?\"", "1,3"); // Simple prefix query works
+    checkMatches("\"jo*n\"", "1,2,3"); // Simple wildcard query works
+    checkMatches("\"jo?n\"", "1,3"); // Simple wildcard query works
+    
+    
     checkBadQuery("\"jo*  id:1 smith\""); // mixing fields in a phrase is bad
     checkBadQuery("\"jo* \"smith\" \""); // phrases inside phrases is bad
   }

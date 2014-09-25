@@ -30,9 +30,11 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
@@ -251,7 +253,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
       // ArrayList spanClauses = new ArrayList();
-      if (contents instanceof TermQuery) {
+      if ((contents instanceof TermQuery) || (contents instanceof PrefixQuery) || (contents instanceof WildcardQuery)) {
         return contents;
       }
       // Build a sequence of Span clauses arranged in a SpanNear - child

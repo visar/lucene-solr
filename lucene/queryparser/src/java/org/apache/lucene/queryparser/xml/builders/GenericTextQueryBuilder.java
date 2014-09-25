@@ -7,6 +7,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
@@ -16,6 +18,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 import org.w3c.dom.Element;
 
@@ -58,6 +61,7 @@ public class GenericTextQueryBuilder implements QueryBuilder {
       PhraseQuery pq = null;//this will be instantiated only if the query results in multiple terms
       Term firstTerm = null;//Keeps the first Term in the query and if there are more terms found then this will be consumed by above PhraseQuery
       int firstPosition = 0;
+      boolean isWildcardQuery = false;
 
       TokenStream source = null;
       try {
@@ -93,6 +97,7 @@ public class GenericTextQueryBuilder implements QueryBuilder {
               if (null == firstTerm) {
                 firstTerm = t;
                 firstPosition = position;
+                isWildcardQuery = containsWildcard(firstTerm.bytes().bytes);
                 continue;
               }
 
@@ -101,6 +106,7 @@ public class GenericTextQueryBuilder implements QueryBuilder {
                 pq.add(firstTerm, firstPosition);
               }
               
+              isWildcardQuery = isWildcardQuery || containsWildcard(t.bytes().bytes);
               pq.add(t, position);
             }
 
@@ -117,7 +123,20 @@ public class GenericTextQueryBuilder implements QueryBuilder {
 
       if (firstTerm == null) {
         return new MatchAllDocsQuery();
-      } else if (pq == null) {
+      } else if (isWildcardQuery) {
+        // send all wildcard queries to the ComplexPhraseQueryParser
+        ComplexPhraseQueryParser parser = new ComplexPhraseQueryParser(Version.LUCENE_CURRENT, field, analyzer);
+        parser.setAllowLeadingWildcard(true);
+        parser.setInOrder(DOMUtils.getAttribute(e, "inOrder", true));
+        Query cpq = null;
+        try {
+          cpq = parser.parse("\"" + text + "\"");
+        } catch (ParseException pe){
+          throw new ParserException("GenericTextQueryBuilder error parsing ComplexPhraseQuery: " + text, pe);
+        }
+        return cpq;
+      }       
+      else if (pq == null) {
           TermQuery tq = new TermQuery(firstTerm);
           tq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
           return tq;
@@ -126,5 +145,14 @@ public class GenericTextQueryBuilder implements QueryBuilder {
           //TODO pq.setSlop(phraseSlop);
           return pq;
       }
+  }
+  
+  private static boolean containsWildcard(byte[] bytes) {
+    for (int i = 0; i < bytes.length; ++i) {
+      if (bytes[i] == '*' || bytes[i] == '?') {
+        return true;
+      }
+    }
+    return false;
   }
 }
