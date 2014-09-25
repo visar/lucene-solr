@@ -300,6 +300,46 @@ public class TestParser extends LuceneTestCase {
     assertTrue("Expecting a MatchAllDocsQuery, but resulted in " + q.getClass(), q instanceof MatchAllDocsQuery);
     dumpResults("GenericTextQuery with no text", q, 5);
   }
+  
+  public void testGenericTextQueryPhraseWildcardXML() throws Exception {
+    Query q = parse("GenericTextQueryPhraseWildcard.xml");
+    dumpResults("GenericTextQuery with a phrase wildcard", q, 5);
+  }
+  
+  public void testGenericTextQueryTrailingWildcardXML() throws Exception {
+    Query q = parse("GenericTextQueryTrailingWildcard.xml");
+    dumpResults("GenericTextQuery with a trailing wildcard", q, 5);
+  }
+
+  public void testGenericTextQueryMultiWildcardXML() throws Exception {
+    Query q = parse("GenericTextQueryMultiWildcard.xml");
+    dumpResults("GenericTextQuery with multiple terms containing wildcards", q, 5);
+  }
+  
+  public void testGenericTextQueryPhraseWildcard2XML() throws Exception {
+    Query q = parse("GenericTextQueryPhraseWildcard2.xml");
+    dumpResults("GenericTextQuery with a phrase wildcard", q, 5);
+  }
+  
+  public void testGenericTextQueryTrailingWildcard2XML() throws Exception {
+    Query q = parse("GenericTextQueryTrailingWildcard2.xml");
+    dumpResults("GenericTextQuery with a trailing wildcard", q, 5);
+  }
+
+  public void testGenericTextQueryMultiWildcard2XML() throws Exception {
+    Query q = parse("GenericTextQueryMultiWildcard2.xml");
+    dumpResults("GenericTextQuery with multiple terms containing wildcards", q, 5);
+  }
+
+  public void testComplexPhraseQueryXML() throws Exception {
+    Query q = parse("ComplexPhraseQuery.xml");
+    dumpResults("ComplexPhraseQuery", q, 5);
+  }
+  
+  public void testComplexPhraseQueryPrefixQueryXML() throws Exception {
+    Query q = parse("ComplexPhraseQueryPrefixQuery.xml");
+    dumpResults("ComplexPhraseQuery with a single prefix query term", q, 5);
+  }
 
   public void testMatchAllDocsPlusFilterXML() throws ParserException, IOException {
     Query q = parse("MatchAllDocsQuery.xml");
