@@ -7,6 +7,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.BoostedQuery;
+import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.queryparser.xml.DOMUtils;
@@ -48,6 +50,11 @@ public class GenericTextQueryBuilder implements QueryBuilder {
   
   protected Analyzer analyzer;
   
+  private static final char WILDCARD_STRING = '*';
+  private static final char WILDCARD_CHAR = '?';
+  private static final char WILDCARD_ESCAPE = '\\';
+  
+  
   public GenericTextQueryBuilder(Analyzer analyzer) {
     this.analyzer = analyzer;
   }
@@ -58,10 +65,31 @@ public class GenericTextQueryBuilder implements QueryBuilder {
               "fieldName");
       String text = DOMUtils.getText(e);
 
+      if (containsWildcard(text))
+      {
+          // send all wildcard queries to the ComplexPhraseQueryParser
+          ComplexPhraseQueryParser parser = new ComplexPhraseQueryParser(Version.LUCENE_CURRENT, field, analyzer);
+          parser.setAllowLeadingWildcard(true);
+          parser.setInOrder(DOMUtils.getAttribute(e, "inOrder", true));
+          float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+          Query q = null;
+          try {
+              String qText = "\"" + text + "\"";
+              q = parser.parse(qText);
+          } catch (ParseException pe){
+              throw new ParserException("GenericTextQueryBuilder error parsing ComplexPhraseQuery: " + text, pe);
+          }
+          
+          if (boost != 1.0f) {
+            q = new BoostedQuery(q, new ConstValueSource(boost));
+          }
+          
+          return q;
+      }
+      
       PhraseQuery pq = null;//this will be instantiated only if the query results in multiple terms
       Term firstTerm = null;//Keeps the first Term in the query and if there are more terms found then this will be consumed by above PhraseQuery
       int firstPosition = 0;
-      boolean isWildcardQuery = false;
 
       TokenStream source = null;
       try {
@@ -97,7 +125,6 @@ public class GenericTextQueryBuilder implements QueryBuilder {
               if (null == firstTerm) {
                 firstTerm = t;
                 firstPosition = position;
-                isWildcardQuery = containsWildcard(firstTerm.bytes().bytes);
                 continue;
               }
 
@@ -106,7 +133,6 @@ public class GenericTextQueryBuilder implements QueryBuilder {
                 pq.add(firstTerm, firstPosition);
               }
               
-              isWildcardQuery = isWildcardQuery || containsWildcard(t.bytes().bytes);
               pq.add(t, position);
             }
 
@@ -122,21 +148,8 @@ public class GenericTextQueryBuilder implements QueryBuilder {
       }
 
       if (firstTerm == null) {
-        return new MatchAllDocsQuery();
-      } else if (isWildcardQuery) {
-        // send all wildcard queries to the ComplexPhraseQueryParser
-        ComplexPhraseQueryParser parser = new ComplexPhraseQueryParser(Version.LUCENE_CURRENT, field, analyzer);
-        parser.setAllowLeadingWildcard(true);
-        parser.setInOrder(DOMUtils.getAttribute(e, "inOrder", true));
-        Query cpq = null;
-        try {
-          cpq = parser.parse("\"" + text + "\"");
-        } catch (ParseException pe){
-          throw new ParserException("GenericTextQueryBuilder error parsing ComplexPhraseQuery: " + text, pe);
-        }
-        return cpq;
-      }       
-      else if (pq == null) {
+        return new MatchAllDocsQuery();      
+      } else if (pq == null) {
           TermQuery tq = new TermQuery(firstTerm);
           tq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
           return tq;
@@ -147,12 +160,24 @@ public class GenericTextQueryBuilder implements QueryBuilder {
       }
   }
   
-  private static boolean containsWildcard(byte[] bytes) {
-    for (int i = 0; i < bytes.length; ++i) {
-      if (bytes[i] == '*' || bytes[i] == '?') {
-        return true;
+  private static boolean containsWildcard(String text) {
+    for (int i = 0; i < text.length();) {
+       final int c = text.codePointAt(i);
+       int length = Character.charCount(c);
+       switch(c) {
+         case WILDCARD_STRING:
+         case WILDCARD_CHAR:
+           return true;
+         case WILDCARD_ESCAPE:
+           // skip over the escaped codepoint if it exists
+           if (i + length < text.length()) {
+             final int nextChar = text.codePointAt(i + length);
+             length += Character.charCount(nextChar);
+           }
+         break;
       }
-    }
+      i += length;
+    }    
     return false;
   }
 }

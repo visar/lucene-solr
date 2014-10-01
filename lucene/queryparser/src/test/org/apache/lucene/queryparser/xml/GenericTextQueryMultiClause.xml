@@ -15,4 +15,11 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<GenericTextQuery fieldName="contents" inOrder="true" boost="50">eu*</GenericTextQuery>
+<BooleanQuery fieldName="contents">
+	<Clause occurs="should">
+	    <GenericTextQuery fieldName="contents" inOrder="true" boost="10">eu* curr* mark*</GenericTextQuery>
+	</Clause>
+	<Clause occurs="should">
+	    <GenericTextQuery fieldName="contents" inOrder="true" boost="100">eurob*</GenericTextQuery>
+	</Clause>
+</BooleanQuery>
