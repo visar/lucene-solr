@@ -331,7 +331,7 @@ public class SolrPluginUtils {
       IndexSchema schema = searcher.getSchema();
       boolean explainStruct = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
 
-      if (results != null) {
+      if (results != null && query != null) {
         NamedList<Explanation> explain = getExplanations(query, results, searcher, schema);
         dbg.add("explain", explainStruct
             ? explanationsToNamedLists(explain)
