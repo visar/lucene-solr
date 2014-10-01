@@ -331,6 +331,11 @@ public class TestParser extends LuceneTestCase {
     dumpResults("GenericTextQuery with multiple terms containing wildcards", q, 5);
   }
 
+  public void testGenericTextQueryMultiClauseXML() throws Exception {
+    Query q = parse("GenericTextQueryMultiClause.xml");
+    dumpResults("GenericTextQuery. BooleanQuery containing multiple GenericTextQuery clauses with different boost factors", q, 5);
+  }
+
   public void testComplexPhraseQueryXML() throws Exception {
     Query q = parse("ComplexPhraseQuery.xml");
     dumpResults("ComplexPhraseQuery", q, 5);

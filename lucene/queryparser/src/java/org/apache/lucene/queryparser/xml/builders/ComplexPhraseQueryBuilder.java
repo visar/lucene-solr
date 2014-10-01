@@ -2,6 +2,8 @@ package org.apache.lucene.queryparser.xml.builders;
 
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queries.function.BoostedQuery;
+import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.queryparser.xml.DOMUtils;
@@ -44,15 +46,20 @@ public class ComplexPhraseQueryBuilder implements QueryBuilder {
 
       ComplexPhraseQueryParser parser = new ComplexPhraseQueryParser(Version.LUCENE_CURRENT, field, analyzer);
       parser.setInOrder(DOMUtils.getAttribute(e, "inOrder", true));
-
-      Query cpq = null;
+      float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+      
+      Query q = null;
       try {
-        cpq = parser.parse(text);
+        q = parser.parse(text);
       } catch (ParseException pe){
         throw new ParserException("Error parsing ComplexPhraseQuery: " + text, pe);
       }
       
-      return cpq;
+      if (boost != 1.0f) {
+        q = new BoostedQuery(q, new ConstValueSource(boost));
+      }
+      
+      return q;
   }
   
 }
