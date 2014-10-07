@@ -17,24 +17,26 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
+import java.nio.ByteBuffer;
+
 /** Reads in reverse from a single byte[]. */
 final class ReverseBytesReader extends FST.BytesReader {
-  private final byte[] bytes;
+  private final ByteBuffer bytes;
   private int pos;
 
-  public ReverseBytesReader(byte[] bytes) {
-    this.bytes = bytes;
+  public ReverseBytesReader(ByteBuffer bytes) {
+    this.bytes = bytes.asReadOnlyBuffer();
   }
 
   @Override
   public byte readByte() {
-    return bytes[pos--];
+    return bytes.get(pos--);
   }
 
   @Override
   public void readBytes(byte[] b, int offset, int len) {
     for(int i=0;i<len;i++) {
-      b[offset+i] = bytes[pos--];
+      b[offset+i] = readByte();
     }
   }
 

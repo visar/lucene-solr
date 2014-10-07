@@ -75,7 +75,6 @@ public class PhraseQueryBuilder implements QueryBuilder {
             int position = -1;
             while (source.incrementToken()) {
               int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
-              if (positionIncrement <= 0) positionIncrement = 1;
               position += positionIncrement;
               termAtt.fillBytesRef();
               pq.add(new Term(field, BytesRef.deepCopyOf(bytes)), position);
