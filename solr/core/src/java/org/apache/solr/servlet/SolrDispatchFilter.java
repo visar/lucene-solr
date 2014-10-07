@@ -773,6 +773,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     catch (EOFException e) {
       log.info("Unable to write response, client closed connection or we are shutting down", e);
     }
+    catch (Exception e) {
+      log.info("Unable to write response: req={} rsp={}", solrReq, solrRsp, e);
+      throw e;
+    }
   }
   
   protected void execute( HttpServletRequest req, SolrRequestHandler handler, SolrQueryRequest sreq, SolrQueryResponse rsp) {
