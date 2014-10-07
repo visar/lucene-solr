@@ -116,10 +116,7 @@ public class GenericTextQueryBuilder implements QueryBuilder {
               termAtt.fillBytesRef();
               Term t = new Term(field, BytesRef.deepCopyOf(bytes));
               
-              int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
-              if (positionIncrement <= 0) 
-                positionIncrement = 1;
-              
+              int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;              
               position += positionIncrement;
 
               if (null == firstTerm) {

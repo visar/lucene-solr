@@ -18,7 +18,9 @@ package org.apache.lucene.util.fst;
  */
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+//import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.store.DataInput;
@@ -35,20 +37,21 @@ class BytesStore extends DataOutput implements Accountable {
         RamUsageEstimator.shallowSizeOfInstance(BytesStore.class)
       + RamUsageEstimator.shallowSizeOfInstance(ArrayList.class);
 
-  private final List<byte[]> blocks = new ArrayList<>();
+  private final List<ByteBuffer> blocks = new ArrayList<>();
 
   private final int blockSize;
   private final int blockBits;
   private final int blockMask;
 
-  private byte[] current;
-  private int nextWrite;
+  private ByteBuffer current;
+
+  @SuppressWarnings("FieldCanBeLocal")
+  private final boolean allocateDirect = true;
 
   public BytesStore(int blockBits) {
     this.blockBits = blockBits;
     blockSize = 1 << blockBits;
     blockMask = blockSize-1;
-    nextWrite = blockSize;
   }
 
   /** Pulls bytes from the provided IndexInput.  */
@@ -65,51 +68,63 @@ class BytesStore extends DataOutput implements Accountable {
     long left = numBytes;
     while(left > 0) {
       final int chunk = (int) Math.min(blockSize, left);
+      // TODO: Ideally this should use ByteBuffer, would require DataInput interface change
       byte[] block = new byte[chunk];
       in.readBytes(block, 0, block.length);
-      blocks.add(block);
+      blocks.add(ByteBuffer.wrap(block));
       left -= chunk;
     }
+    if (! blocks.isEmpty()) {
+      current = blocks.get(blocks.size() - 1);
+      current.position(current.limit());
+    }
+  }
 
-    // So .getPosition still works
-    nextWrite = blocks.get(blocks.size()-1).length;
+  private void addBlock() {
+    //noinspection ConstantConditions
+    current = (allocateDirect ? ByteBuffer.allocateDirect(blockSize) : ByteBuffer.allocate(blockSize));
+    blocks.add(current);
+  }
+
+  private int curPos() {
+    if (current != null) return current.position();
+    if (blocks.isEmpty()) return blockSize;
+    return blocks.get(blocks.size()-1).position();
   }
 
   /** Absolute write byte; you must ensure dest is < max
    *  position written so far. */
   public void writeByte(int dest, byte b) {
+    //System.out.println(this + "  BS.writeByte: dest=" + dest + " byte=" + b);
     int blockIndex = dest >> blockBits;
-    byte[] block = blocks.get(blockIndex);
-    block[dest & blockMask] = b;
+    ByteBuffer block = blocks.get(blockIndex);
+    block.put(dest & blockMask, b);
   }
 
   @Override
   public void writeByte(byte b) {
-    if (nextWrite == blockSize) {
-      current = new byte[blockSize];
-      blocks.add(current);
-      nextWrite = 0;
+    //System.out.println(this + "  BS.writeByte: byte=" + b);
+    if (curPos() == blockSize) {
+      addBlock();
     }
-    current[nextWrite++] = b;
+    current.put(b);
   }
 
   @Override
   public void writeBytes(byte[] b, int offset, int len) {
+    //System.out.println(this + "  BS.writeBytes: offset=" + offset + " len=" + len + " bytes=" + Arrays.toString(b));
     while (len > 0) {
-      int chunk = blockSize - nextWrite;
+      final int chunk = blockSize - curPos();
       if (len <= chunk) {
-        System.arraycopy(b, offset, current, nextWrite, len);
-        nextWrite += len;
+        current.put(b, offset, len);
         break;
       } else {
         if (chunk > 0) {
-          System.arraycopy(b, offset, current, nextWrite, chunk);
+          current.put(b, offset, chunk);
           offset += chunk;
           len -= chunk;
         }
-        current = new byte[blockSize];
-        blocks.add(current);
-        nextWrite = 0;
+        addBlock();
       }
     }
   }
@@ -122,34 +137,25 @@ class BytesStore extends DataOutput implements Accountable {
    *  position.  Note: this cannot "grow" the bytes, so you
    *  must only call it on already written parts. */
   void writeBytes(long dest, byte[] b, int offset, int len) {
-    //System.out.println("  BS.writeBytes dest=" + dest + " offset=" + offset + " len=" + len);
+    writeBytes(dest, ByteBuffer.wrap(b), offset, len);
+  }
+
+  void bufferCopy(ByteBuffer dest, ByteBuffer src, int offset, int len) {
+    ByteBuffer srcView = (ByteBuffer) src.duplicate().position(offset).limit(offset + len);
+    dest.put(srcView);
+  }
+
+  /** Absolute writeBytes without changing the current
+   *  position.  Note: this cannot "grow" the bytes, so you
+   *  must only call it on already written parts. */
+  void writeBytes(long dest, ByteBuffer buffer, int offset, int len) {
+    //System.out.println(this + "  BS.writeBytes dest=" + dest + " offset=" + offset + " len=" + len);
     assert dest + len <= getPosition(): "dest=" + dest + " pos=" + getPosition() + " len=" + len;
 
     // Note: weird: must go "backwards" because copyBytes
     // calls us with overlapping src/dest.  If we
     // go forwards then we overwrite bytes before we can
     // copy them:
-
-    /*
-    int blockIndex = dest >> blockBits;
-    int upto = dest & blockMask;
-    byte[] block = blocks.get(blockIndex);
-    while (len > 0) {
-      int chunk = blockSize - upto;
-      System.out.println("    cycle chunk=" + chunk + " len=" + len);
-      if (len <= chunk) {
-        System.arraycopy(b, offset, block, upto, len);
-        break;
-      } else {
-        System.arraycopy(b, offset, block, upto, chunk);
-        offset += chunk;
-        len -= chunk;
-        blockIndex++;
-        block = blocks.get(blockIndex);
-        upto = 0;
-      }
-    }
-    */
 
     final long end = dest + len;
     int blockIndex = (int) (end >> blockBits);
@@ -158,22 +164,29 @@ class BytesStore extends DataOutput implements Accountable {
       blockIndex--;
       downTo = blockSize;
     }
-    byte[] block = blocks.get(blockIndex);
+    ByteBuffer block = blocks.get(blockIndex);
 
-    while (len > 0) {
-      //System.out.println("    cycle downTo=" + downTo + " len=" + len);
-      if (len <= downTo) {
-        //System.out.println("      final: offset=" + offset + " len=" + len + " dest=" + (downTo-len));
-        System.arraycopy(b, offset, block, downTo-len, len);
-        break;
-      } else {
-        len -= downTo;
-        //System.out.println("      partial: offset=" + (offset + len) + " len=" + downTo + " dest=0");
-        System.arraycopy(b, offset + len, block, 0, downTo);
-        blockIndex--;
-        block = blocks.get(blockIndex);
-        downTo = blockSize;
+    final int lastPos = (block == current ? current.position() : -1); // record if we have to reset current's position
+    try {
+      while (len > 0) {
+        //System.out.println("    cycle downTo=" + downTo + " len=" + len);
+        if (len <= downTo) {
+          //System.out.println("      final: offset=" + offset + " len=" + len + " dest=" + (downTo-len));
+          block.position(downTo - len);
+          bufferCopy(block, buffer, offset, len);
+          break;
+        } else {
+          len -= downTo;
+          //System.out.println("      partial: offset=" + (offset + len) + " len=" + downTo + " dest=0");
+          block.position(0);
+          bufferCopy(block, buffer, offset + len, downTo);
+          blockIndex--;
+          block = blocks.get(blockIndex);
+          downTo = blockSize;
+        }
       }
+    } finally {
+      if (lastPos >= 0) current.position(lastPos);
     }
   }
 
@@ -181,34 +194,13 @@ class BytesStore extends DataOutput implements Accountable {
    *  position. Note: this cannot "grow" the bytes, so must
    *  only call it on already written parts. */
   public void copyBytes(long src, long dest, int len) {
-    //System.out.println("BS.copyBytes src=" + src + " dest=" + dest + " len=" + len);
+    //System.out.println(this + "  BS.copyBytes src=" + src + " dest=" + dest + " len=" + len);
     assert src < dest;
 
     // Note: weird: must go "backwards" because copyBytes
     // calls us with overlapping src/dest.  If we
     // go forwards then we overwrite bytes before we can
     // copy them:
-
-    /*
-    int blockIndex = src >> blockBits;
-    int upto = src & blockMask;
-    byte[] block = blocks.get(blockIndex);
-    while (len > 0) {
-      int chunk = blockSize - upto;
-      System.out.println("  cycle: chunk=" + chunk + " len=" + len);
-      if (len <= chunk) {
-        writeBytes(dest, block, upto, len);
-        break;
-      } else {
-        writeBytes(dest, block, upto, chunk);
-        blockIndex++;
-        block = blocks.get(blockIndex);
-        upto = 0;
-        len -= chunk;
-        dest += chunk;
-      }
-    }
-    */
 
     long end = src + len;
 
@@ -218,7 +210,7 @@ class BytesStore extends DataOutput implements Accountable {
       blockIndex--;
       downTo = blockSize;
     }
-    byte[] block = blocks.get(blockIndex);
+    ByteBuffer block = blocks.get(blockIndex);
 
     while (len > 0) {
       //System.out.println("  cycle downTo=" + downTo);
@@ -242,10 +234,10 @@ class BytesStore extends DataOutput implements Accountable {
   public void writeInt(long pos, int value) {
     int blockIndex = (int) (pos >> blockBits);
     int upto = (int) (pos & blockMask);
-    byte[] block = blocks.get(blockIndex);
+    ByteBuffer block = blocks.get(blockIndex);
     int shift = 24;
     for(int i=0;i<4;i++) {
-      block[upto++] = (byte) (value >> shift);
+      block.put(upto++, (byte) (value >> shift));
       shift -= 8;
       if (upto == blockSize) {
         upto = 0;
@@ -259,23 +251,23 @@ class BytesStore extends DataOutput implements Accountable {
   public void reverse(long srcPos, long destPos) {
     assert srcPos < destPos;
     assert destPos < getPosition();
-    //System.out.println("reverse src=" + srcPos + " dest=" + destPos);
+    //System.out.println(this + "  BS.reverse src=" + srcPos + " dest=" + destPos);
 
     int srcBlockIndex = (int) (srcPos >> blockBits);
     int src = (int) (srcPos & blockMask);
-    byte[] srcBlock = blocks.get(srcBlockIndex);
+    ByteBuffer srcBlock = blocks.get(srcBlockIndex);
 
     int destBlockIndex = (int) (destPos >> blockBits);
     int dest = (int) (destPos & blockMask);
-    byte[] destBlock = blocks.get(destBlockIndex);
+    ByteBuffer destBlock = blocks.get(destBlockIndex);
     //System.out.println("  srcBlock=" + srcBlockIndex + " destBlock=" + destBlockIndex);
 
     int limit = (int) (destPos - srcPos + 1)/2;
     for(int i=0;i<limit;i++) {
       //System.out.println("  cycle src=" + src + " dest=" + dest);
-      byte b = srcBlock[src];
-      srcBlock[src] = destBlock[dest];
-      destBlock[dest] = b;
+      byte b = srcBlock.get(src);
+      srcBlock.put(src, destBlock.get(dest));
+      destBlock.put(dest, b);
       src++;
       if (src == blockSize) {
         srcBlockIndex++;
@@ -295,22 +287,21 @@ class BytesStore extends DataOutput implements Accountable {
   }
 
   public void skipBytes(int len) {
+    //System.out.println(this + "  BS.skipBytes: len=" + len);
     while (len > 0) {
-      int chunk = blockSize - nextWrite;
+      int chunk = blockSize - curPos();
       if (len <= chunk) {
-        nextWrite += len;
+        current.position(current.position() + len);
         break;
       } else {
         len -= chunk;
-        current = new byte[blockSize];
-        blocks.add(current);
-        nextWrite = 0;
+        addBlock();
       }
     }
   }
 
   public long getPosition() {
-    return ((long) blocks.size()-1) * blockSize + nextWrite;
+    return ((long) blocks.size()-1) * blockSize + curPos();
   }
 
   /** Pos must be less than the max position written so far!
@@ -319,7 +310,7 @@ class BytesStore extends DataOutput implements Accountable {
     assert newLen <= getPosition();
     assert newLen >= 0;
     int blockIndex = (int) (newLen >> blockBits);
-    nextWrite = (int) (newLen & blockMask);
+    int nextWrite = (int) (newLen & blockMask);
     if (nextWrite == 0) {
       blockIndex--;
       nextWrite = blockSize;
@@ -329,42 +320,63 @@ class BytesStore extends DataOutput implements Accountable {
       current = null;
     } else {
       current = blocks.get(blockIndex);
+      current.position(nextWrite);
     }
     assert newLen == getPosition();
   }
 
   public void finish() {
+    //System.out.println(this + "  BS.finish()");
     if (current != null) {
-      byte[] lastBuffer = new byte[nextWrite];
-      System.arraycopy(current, 0, lastBuffer, 0, nextWrite);
-      blocks.set(blocks.size()-1, lastBuffer);
+      current.limit(current.position());
       current = null;
     }
   }
 
+  private byte[] byteBufferToArray(ByteBuffer buffer) {
+    byte[] copy = new byte[buffer.limit()];
+
+    int curPos = (buffer == current ? buffer.position() : -1);
+    try {
+      buffer.position(0);
+      buffer.get(copy);
+    } finally {
+      if (curPos >= 0) current.position(curPos);
+    }
+
+    return copy;
+  }
+
   /** Writes all of our bytes to the target {@link DataOutput}. */
   public void writeTo(DataOutput out) throws IOException {
-    for(byte[] block : blocks) {
-      out.writeBytes(block, 0, block.length);
+    //System.out.println(this + "  BS.writeTo: to: " + out);
+    for(ByteBuffer block : blocks) {
+      byte[] blockArray = byteBufferToArray(block);
+      //System.out.println("    writing: bytes=" + blockArray.length + ", array=" + Arrays.toString(blockArray));
+      out.writeBytes(blockArray, 0, blockArray.length);
     }
   }
 
   public FST.BytesReader getForwardReader() {
+    //System.out.println(this + "  BS.getForwardReader");
     if (blocks.size() == 1) {
       return new ForwardBytesReader(blocks.get(0));
     }
     return new FST.BytesReader() {
-      private byte[] current;
+      private ByteBuffer curBuf;
       private int nextBuffer;
-      private int nextRead = blockSize;
+
+      private int curPos() {
+        return (curBuf == null ? blockSize : curBuf.position());
+      }
 
       @Override
       public byte readByte() {
-        if (nextRead == blockSize) {
-          current = blocks.get(nextBuffer++);
-          nextRead = 0;
+        if (curPos() == blockSize) {
+          curBuf = blocks.get(nextBuffer++).asReadOnlyBuffer();
+          curBuf.position(0);
         }
-        return current[nextRead++];
+        return curBuf.get();
       }
 
       @Override
@@ -375,34 +387,33 @@ class BytesStore extends DataOutput implements Accountable {
       @Override
       public void readBytes(byte[] b, int offset, int len) {
         while(len > 0) {
-          int chunkLeft = blockSize - nextRead;
+          int chunkLeft = blockSize - curPos();
           if (len <= chunkLeft) {
-            System.arraycopy(current, nextRead, b, offset, len);
-            nextRead += len;
+            curBuf.get(b, offset, len);
             break;
           } else {
             if (chunkLeft > 0) {
-              System.arraycopy(current, nextRead, b, offset, chunkLeft);
+              curBuf.get(b, offset, chunkLeft);
               offset += chunkLeft;
               len -= chunkLeft;
             }
-            current = blocks.get(nextBuffer++);
-            nextRead = 0;
+            curBuf = blocks.get(nextBuffer++).asReadOnlyBuffer();
+            curBuf.position(0);
           }
         }
       }
 
       @Override
       public long getPosition() {
-        return ((long) nextBuffer-1)*blockSize + nextRead;
+        return ((long) nextBuffer-1)*blockSize + curPos();
       }
 
       @Override
       public void setPosition(long pos) {
         int bufferIndex = (int) (pos >> blockBits);
         nextBuffer = bufferIndex+1;
-        current = blocks.get(bufferIndex);
-        nextRead = (int) (pos & blockMask);
+        curBuf = blocks.get(bufferIndex).asReadOnlyBuffer();
+        curBuf.position((int) (pos & blockMask));
         assert getPosition() == pos;
       }
 
@@ -422,17 +433,17 @@ class BytesStore extends DataOutput implements Accountable {
       return new ReverseBytesReader(blocks.get(0));
     }
     return new FST.BytesReader() {
-      private byte[] current = blocks.size() == 0 ? null : blocks.get(0);
+      private ByteBuffer current = blocks.size() == 0 ? null : blocks.get(0).asReadOnlyBuffer();
       private int nextBuffer = -1;
       private int nextRead = 0;
 
       @Override
       public byte readByte() {
         if (nextRead == -1) {
-          current = blocks.get(nextBuffer--);
+          current = blocks.get(nextBuffer--).asReadOnlyBuffer();
           nextRead = blockSize-1;
         }
-        return current[nextRead--];
+        return current.get(nextRead--);
       }
 
       @Override
@@ -460,7 +471,7 @@ class BytesStore extends DataOutput implements Accountable {
         // EOF)...?
         int bufferIndex = (int) (pos >> blockBits);
         nextBuffer = bufferIndex-1;
-        current = blocks.get(bufferIndex);
+        current = blocks.get(bufferIndex).asReadOnlyBuffer();
         nextRead = (int) (pos & blockMask);
         assert getPosition() == pos: "pos=" + pos + " getPos()=" + getPosition();
       }
