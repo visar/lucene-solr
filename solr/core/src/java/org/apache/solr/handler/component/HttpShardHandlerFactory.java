@@ -273,17 +273,33 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       return nodeName.substring(0, nodeName.indexOf(':'));
     }
     
-    ShuffledLiveHostsListReplicaComparator(Set<String> liveNodes, Random r, boolean hostAffinity, boolean nodeAffinity) {
+    ShuffledLiveHostsListReplicaComparator(Set<String> liveNodes, Random r, boolean hostAffinity, boolean nodeAffinity, List<String> preferredHostsList) {
       final Set<String> liveHosts = new HashSet<String>();
       for (String liveNode : liveNodes) {
         liveHosts.add( nodeName_TO_host(liveNode) );        
       }
+
+      if (preferredHostsList != null) {
+        // preferredHostsList = [ A, B, C ] liveHosts = [ B, D, F ]
+        preferredHostsList.retainAll(liveHosts);
+        // preferredHostsList = [ B ] liveHosts = [ B, D, F ]
+        liveHosts.removeAll(preferredHostsList);
+        // preferredHostsList = [ B ] liveHosts = [ D, F ]
+      }
+
       this.hostAffinity = hostAffinity;
       this.nodeAffinity = nodeAffinity;
       shuffledLiveHostsList = new ArrayList<String>(liveHosts);
       shuffledLiveNodesList = new ArrayList<String>(liveNodes);
       Collections.shuffle(shuffledLiveHostsList, r);
       Collections.shuffle(shuffledLiveNodesList, r);
+
+      if (preferredHostsList != null) {
+        // preferredHostsList = [ B ] 
+        // shuffledLiveHostsList = [ D, F ] or [ F, D ]
+        shuffledLiveHostsList.addAll(0, preferredHostsList);
+        // shuffledLiveHostsList = [ B, D, F ] or [ B, F, D ]
+      }
     }
     
     @Override
@@ -320,7 +336,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     
     if (hostAffinity || nodeAffinity) {
       Set<String> liveNodes = req.getCore().getCoreDescriptor().getCoreContainer().getZkController().getClusterState().getLiveNodes();
-      Comparator<Replica> replicaComparator = new ShuffledLiveHostsListReplicaComparator(liveNodes, r, hostAffinity, nodeAffinity);      
+      List<String> preferredHostsList = null;
+      String preferredHostsString = params.get("replicaAffinity.preferredHosts");
+      if (preferredHostsString != null) {
+        preferredHostsList = StrUtils.splitSmart(preferredHostsString,  ",", true);
+      }
+      Comparator<Replica> replicaComparator = new ShuffledLiveHostsListReplicaComparator(liveNodes, r, hostAffinity, nodeAffinity, preferredHostsList);      
       return new SortingReplicaListTransformer(replicaComparator);
     } else {
       return shufflingReplicaListTransformer;
