@@ -110,7 +110,13 @@ public class ComplexPhraseQueryParser extends QueryParser {
         // state change should not
         // present an issue
         setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-        return super.parse(query);
+        Query q = super.parse(query);
+        if (q instanceof PrefixQuery || q instanceof WildcardQuery) {
+          // reset to oldMethod for non-BooleanQuery's which are allowed by 
+          // ComplexPhraseQuery.rewrite but which don't need conversion  
+          ((MultiTermQuery)q).setRewriteMethod(oldMethod); 
+        }
+        return q;
       } finally {
         setMultiTermRewriteMethod(oldMethod);
       }
