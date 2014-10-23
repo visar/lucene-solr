@@ -68,6 +68,6 @@ class TermFreqScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
-    throw new UnsupportedOperationException("Not supported yet.");
+    return scorer.intervals(collectIntervals);
   }
 }

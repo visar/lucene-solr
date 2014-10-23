@@ -299,8 +299,7 @@ public class ConstantScoreQuery extends FieldedQuery {
       if (docIdSetIterator instanceof Scorer) {
         return ((Scorer) docIdSetIterator).intervals(collectIntervals);
       } else {
-        return null;
-        //throw new UnsupportedOperationException("positions are only supported on Scorer subclasses");
+        throw new UnsupportedOperationException();
       }
     }
 

@@ -107,7 +107,7 @@ public class SpanScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
