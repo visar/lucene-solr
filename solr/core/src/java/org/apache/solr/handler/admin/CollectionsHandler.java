@@ -63,6 +63,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.ASYNC;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATESHARD;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
@@ -462,7 +463,7 @@ public class CollectionsHandler extends RequestHandlerBase {
          COLL_CONF,
          NUM_SLICES,
          MAX_SHARDS_PER_NODE,
-        CREATE_NODE_SET ,
+         CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE,
         SHARDS_PROP,
         ASYNC,
         "router.");
@@ -496,7 +497,7 @@ public class CollectionsHandler extends RequestHandlerBase {
       throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections" );
 
     Map<String, Object> map = makeMap(QUEUE_OPERATION, CREATESHARD);
-    copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, REPLICATION_FACTOR,CREATE_NODE_SET, ASYNC);
+    copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, REPLICATION_FACTOR,CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE, ASYNC);
     copyPropertiesIfNotNull(req.getParams(), map);
     ZkNodeProps m = new ZkNodeProps(map);
     handleResponse(CREATESHARD, m, rsp);
@@ -613,6 +614,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     Map<String,Object> props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, CollectionAction.ADDREPLICA.toString());
     copyIfNotNull(req.getParams(), props, COLLECTION_PROP, "node", SHARD_ID_PROP, ShardParams._ROUTE_,
+        CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE,
         CoreAdminParams.NAME, CoreAdminParams.INSTANCE_DIR, CoreAdminParams.DATA_DIR);
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(CollectionAction.ADDREPLICA.toString(), m, rsp);
