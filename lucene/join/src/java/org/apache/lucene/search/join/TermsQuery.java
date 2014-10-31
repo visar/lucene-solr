@@ -35,7 +35,7 @@ import java.util.Comparator;
  *
  * @lucene.experimental
  */
-class TermsQuery extends MultiTermQuery {
+public class TermsQuery extends MultiTermQuery {
 
   private final BytesRefHash terms;
   private final int[] ords;
