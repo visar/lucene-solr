@@ -88,6 +88,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.cloud.Assign.Node;
 import static org.apache.solr.cloud.Assign.getNodesForNewShard;
+import static org.apache.solr.cloud.Assign.getLiveOrLiveAndCreateNodeSetList;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
@@ -108,6 +109,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
   
+  static final boolean CREATE_NODE_SET_SHUFFLE_DEFAULT = true;
+  public static final String CREATE_NODE_SET_SHUFFLE = "createNodeSet.shuffle";
   public static final String CREATE_NODE_SET = "createNodeSet";
   
   public static final String DELETECOLLECTION = "deletecollection";
@@ -1024,9 +1027,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     DocCollection collection = clusterState.getCollection(collectionName);
     int maxShardsPerNode = collection.getInt(MAX_SHARDS_PER_NODE, 1);
     int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(REPLICATION_FACTOR, 1));
-    String createNodeSetStr = message.getStr(CREATE_NODE_SET);
 
-    ArrayList<Node> sortedNodeList = getNodesForNewShard(clusterState, collectionName, numSlices, maxShardsPerNode, repFactor, createNodeSetStr);
+    final ArrayList<Node> sortedNodeList = getNodesForNewShard(clusterState, message, collectionName, numSlices, maxShardsPerNode, repFactor, "create shard for "+collection);
 
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
     // wait for a while until we see the shard
@@ -1951,8 +1953,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
 
       int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
-      String createNodeSetStr; 
-      List<String> createNodeList = ((createNodeSetStr = message.getStr(CREATE_NODE_SET)) == null)?null:StrUtils.splitSmart(createNodeSetStr, ",", true);
       
       if (repFactor <= 0) {
         throw new SolrException(ErrorCode.BAD_REQUEST, REPLICATION_FACTOR + " must be greater than 0");
@@ -1966,19 +1966,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       // add our new cores to existing nodes serving the least number of cores
       // but (for now) require that each core goes on a distinct node.
       
-      // TODO: add smarter options that look at the current number of cores per
-      // node?
-      // for now we just go random
-      Set<String> nodes = clusterState.getLiveNodes();
-      List<String> nodeList = new ArrayList<>(nodes.size());
-      nodeList.addAll(nodes);
-      if (createNodeList != null) nodeList.retainAll(createNodeList);
-      Collections.shuffle(nodeList);
-      
-      if (nodeList.size() <= 0) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName
-            + ". No live Solr-instances" + ((createNodeList != null)?" among Solr-instances specified in " + CREATE_NODE_SET + ":" + createNodeSetStr:""));
-      }
+      final List<String> nodeList = getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message);
       
       if (repFactor > nodeList.size()) {
         log.warn("Specified "
@@ -1987,7 +1975,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + repFactor
             + " on collection "
             + collectionName
-            + " is higher than or equal to the number of Solr instances currently live or part of your " + CREATE_NODE_SET + "("
+            + " is higher than or equal to the number of Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
             + nodeList.size()
             + "). Its unusual to run two replica of the same slice on the same Solr-instance.");
       }
@@ -1997,7 +1985,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       if (maxShardsAllowedToCreate < requestedShardsToCreate) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
             + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
-            + ", and the number of live nodes is " + nodeList.size()
+            + ", and the number of nodes currently live or live and part of your "+CREATE_NODE_SET+" is " + nodeList.size()
             + ". This allows a maximum of " + maxShardsAllowedToCreate
             + " to be created. Value of " + NUM_SLICES + " is " + numSlices
             + " and value of " + REPLICATION_FACTOR + " is " + repFactor
@@ -2149,7 +2137,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
 
     if(node== null){
-      node = getNodesForNewShard(clusterState,collection, coll.getSlices().size() , coll.getInt(MAX_SHARDS_PER_NODE, 1),coll.getInt(REPLICATION_FACTOR, 1),null).get(0).nodeName;
+      node = getNodesForNewShard(clusterState, message, collection, coll.getSlices().size() , coll.getInt(MAX_SHARDS_PER_NODE, 1),coll.getInt(REPLICATION_FACTOR, 1),"add replica for "+collection).get(0).nodeName;
       log.info("node not provided , Identified {} for creating new replica",node);
     }
 
