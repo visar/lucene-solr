@@ -345,7 +345,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   {
     SolrParams params = req.getParams();
     boolean hostAffinity = false;
-    boolean nodeAffinity = params.getBool("nodeAffinity", false); // deprecated - use replicaAffinity=node instead going forward
+    boolean nodeAffinity = false;
     Map<String,Integer> hostPrioritiesMap = null;
     
     String[] replicaAffinities = params.getParams("replicaAffinity");
