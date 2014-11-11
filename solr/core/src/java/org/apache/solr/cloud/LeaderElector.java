@@ -255,6 +255,7 @@ public  class LeaderElector {
         // we must have failed in creating the election node - someone else must
         // be working on it, lets try again
         if (tries++ > 20) {
+          context = null;
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "", e);
         }
@@ -315,10 +316,10 @@ public  class LeaderElector {
    */
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
-    this.context = context;
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     zkCmdExecutor.ensureExists(electZKPath, zkClient);
+    this.context = context;
   }
   
   /**
