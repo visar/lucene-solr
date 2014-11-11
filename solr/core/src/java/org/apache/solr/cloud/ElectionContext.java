@@ -52,7 +52,7 @@ public abstract class ElectionContext {
   final ZkNodeProps leaderProps;
   final String id;
   final String leaderPath;
-  String leaderSeqPath;
+  volatile String leaderSeqPath;
   private SolrZkClient zkClient;
   
   public ElectionContext(final String coreNodeName,
@@ -67,12 +67,17 @@ public abstract class ElectionContext {
   public void close() {}
   
   public void cancelElection() throws InterruptedException, KeeperException {
-    try {
-      log.info("canceling election {}",leaderSeqPath );
-      zkClient.delete(leaderSeqPath, -1, true);
-    } catch (NoNodeException e) {
-      // fine
-      log.warn("cancelElection did not find election node to remove",e);
+    if( leaderSeqPath != null ){
+      try {
+        log.info("canceling election {}",leaderSeqPath );
+        zkClient.delete(leaderSeqPath, -1, true);
+      } catch (NoNodeException e) {
+        // fine
+        log.warn("cancelElection did not find election node to remove {}" ,leaderSeqPath);
+        log.info("cancelElection did not find election node to remove {} - exception was {}" ,leaderSeqPath, e);
+      }
+    } else {
+      log.warn("cancelElection skipped as this context has not been initialized");
     }
   }
 
