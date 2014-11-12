@@ -43,18 +43,25 @@ public class ExtractReuters {
     this.outputDir = outputDir;
     System.out.println("Deleting all files in " + outputDir);
     IOUtils.rm(outputDir);
+    Files.createDirectories(outputDir);
   }
 
   public void extract() throws IOException {
     long count = 0;
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(reutersDir, "*.sgm")) {
       for (Path sgmFile : stream) {
-        extractFile(sgmFile);
+        try {
+          extractFile(sgmFile);
+        } catch (Exception e) {
+          System.err.println("Unable to extract file " + sgmFile + ", skipping");
+          e.printStackTrace();
+          continue;
+        }
         count++;
       }
     }
     if (count == 0) {
-      System.err.println("No .sgm files in " + reutersDir);
+      System.err.println("No valid .sgm files in " + reutersDir);
     }
   }
 
@@ -70,16 +77,18 @@ public class ExtractReuters {
    * Override if you wish to change what is extracted
    */
   protected void extractFile(Path sgmFile) {
+    int lineNumber = 0;
     try (BufferedReader reader = Files.newBufferedReader(sgmFile, StandardCharsets.UTF_8)) {
       StringBuilder buffer = new StringBuilder(1024);
       StringBuilder outBuffer = new StringBuilder(1024);
 
-      String line = null;
+      String line;
       int docNumber = 0;
       while ((line = reader.readLine()) != null) {
+        lineNumber++;
         // when we see a closing reuters tag, flush the file
 
-        if (line.indexOf("</REUTERS") == -1) {
+        if (!line.contains("</REUTERS")) {
           // Replace the SGM escape sequences
 
           buffer.append(line).append(' ');// accumulate the strings for now,
@@ -110,7 +119,7 @@ public class ExtractReuters {
         }
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(e.toString() + " (at " + sgmFile + ":" + lineNumber + ")", e);
     }
   }
 
@@ -124,11 +133,10 @@ public class ExtractReuters {
       usage("Cannot find Path to Reuters SGM files ("+reutersDir+")");
       return;
     }
-    
+
     // First, extract to a tmp directory and only if everything succeeds, rename
     // to output directory.
     Path outputDir = Paths.get(args[1] + "-tmp");
-    Files.createDirectories(outputDir);
     ExtractReuters extractor = new ExtractReuters(reutersDir, outputDir);
     extractor.extract();
     // Now rename to requested output dir
