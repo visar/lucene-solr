@@ -78,6 +78,7 @@ public class Overseer implements Closeable {
   public static final String QUIT = "quit";
 
   public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
+  public static final int PEEK_TO_BATCH_DELAY = 100;
   public static final String CREATESHARD = "createshard";
   public static final String UPDATESHARDSTATE = "updateshardstate";
 
@@ -86,6 +87,7 @@ public class Overseer implements Closeable {
   static enum LeaderStatus { DONT_KNOW, NO, YES }
 
   private long lastUpdatedTime = 0;
+  private long lastBatchSize = 0;
 
   private class ClusterStateUpdater implements Runnable, Closeable {
     
@@ -238,6 +240,7 @@ public class Overseer implements Closeable {
               ClusterState clusterState = reader.getClusterState();
 
               while (head != null) {
+                ++lastBatchSize;
                 final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
                 final String operation = message.getStr(QUEUE_OPERATION);
                 final TimerContext timerContext = stats.time(operation);
@@ -253,16 +256,34 @@ public class Overseer implements Closeable {
                   log.error("Overseer could not process the current clusterstate state update message, skipping the message.", e);
                   stats.error(operation);
                 } finally {
-                  timerContext.stop();
+                  final long elapsed_nanos = timerContext.stop();
+                  log.info("operation {} took {} ms", operation, TimeUnit.MILLISECONDS.convert(elapsed_nanos, TimeUnit.NANOSECONDS));
                 }
                 workQueue.offer(head.getBytes());
 
                 stateUpdateQueue.poll();
 
-                if (isClosed || System.nanoTime() - lastUpdatedTime > TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS)) break;
+                if (isClosed) break;
 
-                // if an event comes in the next 100ms batch it together
-                head = stateUpdateQueue.peek(100);
+                final long nanos_since_last_update = (System.nanoTime() - lastUpdatedTime);
+                if (lastBatchSize > 1 && nanos_since_last_update > TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS)) {
+                  log.info("state update delay threshold exceeded: {} vs. {} ms (batch size is {})",
+                      TimeUnit.MILLISECONDS.convert(nanos_since_last_update, TimeUnit.NANOSECONDS), STATE_UPDATE_DELAY,
+                      lastBatchSize);
+                  break;
+                }
+
+                // if an event comes in the next ... ms batch it together
+                final long peek_start = System.nanoTime();
+                head = stateUpdateQueue.peek(PEEK_TO_BATCH_DELAY);
+                final long peek_end = System.nanoTime();
+                if (head != null) {
+                  log.info("after {} ms found another event for this batch (new batch size is {})",
+                      TimeUnit.MILLISECONDS.convert(peek_end-peek_start, TimeUnit.NANOSECONDS), lastBatchSize);
+                } else if (lastBatchSize > 1) {
+                  log.info("after {} ms found no further events for this size {} batch",
+                      TimeUnit.MILLISECONDS.convert(peek_end-peek_start, TimeUnit.NANOSECONDS), lastBatchSize);
+                }
               }
               updateZkStates(clusterState);
               // clean work queue
@@ -304,7 +325,8 @@ public class Overseer implements Closeable {
         lastUpdatedTime = System.nanoTime();
         success = true;
       } finally {
-        timerContext.stop();
+        final long elapsedNanos = timerContext.stop();
+        log.info("updateZkStates (batch size {}) took {} ms", lastBatchSize, TimeUnit.MILLISECONDS.convert(elapsedNanos, TimeUnit.NANOSECONDS));
         if (success)  {
           stats.success("update_state");
         } else  {
