@@ -367,10 +367,6 @@ public class Grouping {
 
     if (allCollectors != null) {
       searchWithTimeLimiter(luceneFilter, allCollectors);
-
-      if(allCollectors instanceof DelegatingCollector) {
-        ((DelegatingCollector) allCollectors).finish();
-      }
     }
 
     if (getGroupedDocSet && allGroupHeadsCollector != null) {
@@ -388,27 +384,26 @@ public class Grouping {
 
     if (!collectors.isEmpty()) {
       Collector secondPhaseCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
-      if (collectors.size() > 0) {
-        if (cachedCollector != null) {
-          if (cachedCollector.isCached()) {
-            cachedCollector.replay(secondPhaseCollectors);
-          } else {
-            signalCacheWarning = true;
-            logger.warn(String.format(Locale.ROOT, "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
-            logger.warn("Please increase cache size or disable group caching.");
-            searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
-          }
-        } else {
-          if (pf.postFilter != null) {
-            pf.postFilter.setLastDelegate(secondPhaseCollectors);
-            secondPhaseCollectors = pf.postFilter;
-          }
-          searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
-
+      if (cachedCollector != null) {
+        if (cachedCollector.isCached()) {
+          cachedCollector.replay(secondPhaseCollectors);
+          // DelegatingCollector is a solr class, cachedCollector is a lucene class, so therefore at present
+          // the cachedCollector's replay method cannot call the DelegatingCollector's finish method
           if(secondPhaseCollectors instanceof DelegatingCollector) {
             ((DelegatingCollector) secondPhaseCollectors).finish();
           }
+        } else {
+          signalCacheWarning = true;
+          logger.warn(String.format(Locale.ROOT, "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
+          logger.warn("Please increase cache size or disable group caching.");
+          searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
         }
+      } else {
+        if (pf.postFilter != null) {
+          pf.postFilter.setLastDelegate(secondPhaseCollectors);
+          secondPhaseCollectors = pf.postFilter;
+        }
+        searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
       }
     }
 
@@ -456,6 +451,10 @@ public class Grouping {
     } catch (ExitableDirectoryReader.ExitingReaderException e) {
       logger.warn( "Query: " + query + "; " + e.getMessage() );
       qr.setPartialResults(true);
+    }
+
+    if(collector instanceof DelegatingCollector) {
+      ((DelegatingCollector) collector).finish();
     }
   }
 
