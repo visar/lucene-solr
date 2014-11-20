@@ -2465,22 +2465,29 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
     if (deleteInstanceDir) {
+      log.info("Adding close hook for core={} ({})", getName(), this);
       addCloseHook(new CloseHook() {
         @Override
         public void preClose(SolrCore core) {
+	  log.info("preClose hook for core={} ({})", getName(), this);
         }
 
         @Override
         public void postClose(SolrCore core) {
+          log.info("postClose hook for core={} ({})", getName(), this);
           CoreDescriptor cd = core.getCoreDescriptor();
           if (cd != null) {
+	    log.info("postClose hook cd={} cd.getInstanceDir={}", cd, cd.getInstanceDir());
             File instanceDir = new File(cd.getInstanceDir());
+            log.info("postClose hook instanceDir={}", instanceDir);
             try {
               FileUtils.deleteDirectory(instanceDir);
             } catch (IOException e) {
+              log.info("postClose hook caught IOException {}", e);
               SolrException.log(log, "Failed to delete instance dir for core:"
                   + core.getName() + " dir:" + instanceDir.getAbsolutePath());
             }
+            log.info("postClose hook call complete for core={} ({})", getName(), this);
           }
         }
       });
