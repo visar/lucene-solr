@@ -694,21 +694,29 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
       
       if (params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, CoreAdminParams.DELETE_INSTANCE_DIR_DEFAULT_VALUE)) {
+        log.info("Adding close hook for core={} ({})", core.getName(), core);
         core.addCloseHook(new CloseHook() {
           @Override
-          public void preClose(SolrCore core) {}
+          public void preClose(SolrCore core) {
+            log.info("preClose hook called for core={} ({})", core.getName(), core);            
+          }
           
           @Override
           public void postClose(SolrCore core) {
+            log.info("postClose hook called for core={} ({})", core.getName(), core);            
             CoreDescriptor cd = core.getCoreDescriptor();
             if (cd != null) {
+              log.info("postClose hook cd={} cd.getInstanceDir={}", cd, cd.getInstanceDir());            
               File instanceDir = new File(cd.getInstanceDir());
+              log.info("postClose hook instanceDir={}", instanceDir);            
               try {
                 FileUtils.deleteDirectory(instanceDir);
               } catch (IOException e) {
+                log.info("postClose hook caught IOException {}", e);            
                 SolrException.log(log, "Failed to delete instance dir for core:"
                     + core.getName() + " dir:" + instanceDir.getAbsolutePath());
               }
+              log.info("postClose hook call complete for core={} ({})", core.getName(), core);            
             }
           }
         });
