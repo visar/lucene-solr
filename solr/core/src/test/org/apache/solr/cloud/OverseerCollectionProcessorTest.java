@@ -388,28 +388,24 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   
   protected void issueCreateJob(Integer numberOfSlices,
       Integer replicationFactor, Integer maxShardsPerNode, List<String> createNodeList, boolean sendCreateNodeList) {
-    ZkNodeProps props;
+    Map<String,Object> propMap = ZkNodeProps.makeMap(
+        Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
+        ZkStateReader.REPLICATION_FACTOR, replicationFactor.toString(),
+        "name", COLLECTION_NAME,
+        "collection.configName", CONFIG_NAME,
+        OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
+        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode.toString()
+    );
     if (sendCreateNodeList) {
-      props = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-          CollectionParams.CollectionAction.CREATE.toLower(),
-          ZkStateReader.REPLICATION_FACTOR,
-          replicationFactor.toString(), "name", COLLECTION_NAME,
-          "collection.configName", CONFIG_NAME,
-          OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
-          ZkStateReader.MAX_SHARDS_PER_NODE,
-          maxShardsPerNode.toString(),
-          OverseerCollectionProcessor.CREATE_NODE_SET,
+      propMap.put(OverseerCollectionProcessor.CREATE_NODE_SET,
           (createNodeList != null)?StrUtils.join(createNodeList, ','):null);
-    } else {
-      props = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-          CollectionParams.CollectionAction.CREATE.toLower(),
-          ZkStateReader.REPLICATION_FACTOR,
-          replicationFactor.toString(), "name", COLLECTION_NAME,
-          "collection.configName", CONFIG_NAME,
-          OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
-          ZkStateReader.MAX_SHARDS_PER_NODE,
-          maxShardsPerNode.toString());
+      boolean doShuffle = random().nextBoolean();
+      if (OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE_DEFAULT != doShuffle || random().nextBoolean()) {
+        propMap.put(OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE, doShuffle);
+      }
     }
+
+    ZkNodeProps props = new ZkNodeProps(propMap);
     QueueEvent qe = new QueueEvent("id", ZkStateReader.toJSON(props), null){
       @Override
       public void setBytes(byte[] bytes) {
