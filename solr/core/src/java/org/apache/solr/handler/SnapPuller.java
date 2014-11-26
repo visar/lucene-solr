@@ -45,11 +45,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.InflaterInputStream;
@@ -70,8 +66,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -125,15 +119,7 @@ public class SnapPuller {
 
   private final String masterUrl;
 
-  private final ReplicationHandler replicationHandler;
-
-  private final Integer pollInterval;
-
-  private String pollIntervalStr;
-
-  private ScheduledExecutorService executorService;
-
-  private volatile long executorStartTime;
+  final ReplicationHandler replicationHandler;
 
   private volatile long replicationStartTime;
 
@@ -161,11 +147,6 @@ public class SnapPuller {
 
   private boolean useExternal = false;
 
-  /**
-   * Disable the timer task for polling
-   */
-  private AtomicBoolean pollDisabled = new AtomicBoolean(false);
-
   private final HttpClient myHttpClient;
 
   private static HttpClient createHttpClient(SolrCore core, String connTimeout, String readTimeout, String httpBasicAuthUser, String httpBasicAuthPassword, boolean useCompression) {
@@ -183,7 +164,6 @@ public class SnapPuller {
 
   public SnapPuller(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
     solrCore = sc;
-    final SolrParams params = SolrParams.toSolrParams(initArgs);
     String masterUrl = (String) initArgs.get(MASTER_URL);
     if (masterUrl == null)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -195,8 +175,6 @@ public class SnapPuller {
     this.masterUrl = masterUrl;
     
     this.replicationHandler = handler;
-    pollIntervalStr = (String) initArgs.get(POLL_INTERVAL);
-    pollInterval = readInterval(pollIntervalStr);
     String compress = (String) initArgs.get(COMPRESSION);
     useInternal = INTERNAL.equals(compress);
     useExternal = EXTERNAL.equals(compress);
@@ -205,35 +183,6 @@ public class SnapPuller {
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
     myHttpClient = createHttpClient(solrCore, connTimeout, readTimeout, httpBasicAuthUser, httpBasicAuthPassword, useExternal);
-    if (pollInterval != null && pollInterval > 0) {
-      startExecutorService();
-    } else {
-      LOG.info(" No value set for 'pollInterval'. Timer Task not started.");
-    }
-  }
-
-  private void startExecutorService() {
-    Runnable task = new Runnable() {
-      @Override
-      public void run() {
-        if (pollDisabled.get()) {
-          LOG.info("Poll disabled");
-          return;
-        }
-        try {
-          LOG.debug("Polling for index modifications");
-          executorStartTime = System.currentTimeMillis();
-          replicationHandler.doFetch(null, false);
-        } catch (Exception e) {
-          LOG.error("Exception in fetching index", e);
-        }
-      }
-    };
-    executorService = Executors.newSingleThreadScheduledExecutor(
-        new DefaultSolrThreadFactory("snapPuller"));
-    long initialDelay = pollInterval - (System.currentTimeMillis() % pollInterval);
-    executorService.scheduleAtFixedRate(task, initialDelay, pollInterval, TimeUnit.MILLISECONDS);
-    LOG.info("Poll Scheduled at an interval of " + pollInterval + "ms");
   }
 
   /**
@@ -595,7 +544,7 @@ public class SnapPuller {
         props.setProperty(TIMES_CONFIG_REPLICATED, String.valueOf(confFilesCount));
       }
 
-      props.setProperty(LAST_CYCLE_BYTES_DOWNLOADED, String.valueOf(getTotalBytesDownloaded(this)));
+      props.setProperty(LAST_CYCLE_BYTES_DOWNLOADED, String.valueOf(getTotalBytesDownloaded()));
       if (!successfulInstall) {
         int numFailures = 1;
         if (props.containsKey(TIMES_FAILED)) {
@@ -624,20 +573,20 @@ public class SnapPuller {
     }
   }
 
-  static long getTotalBytesDownloaded(SnapPuller snappuller) {
+  long getTotalBytesDownloaded() {
     long bytesDownloaded = 0;
     //get size from list of files to download
-    for (Map<String, Object> file : snappuller.getFilesDownloaded()) {
+    for (Map<String, Object> file : getFilesDownloaded()) {
       bytesDownloaded += (Long) file.get(SIZE);
     }
 
     //get size from list of conf files to download
-    for (Map<String, Object> file : snappuller.getConfFilesDownloaded()) {
+    for (Map<String, Object> file : getConfFilesDownloaded()) {
       bytesDownloaded += (Long) file.get(SIZE);
     }
 
     //get size from current file being downloaded
-    Map<String, Object> currentFile = snappuller.getCurrentFile();
+    Map<String, Object> currentFile = getCurrentFile();
     if (currentFile != null) {
       if (currentFile.containsKey("bytesDownloaded")) {
         bytesDownloaded += (Long) currentFile.get("bytesDownloaded");
@@ -1052,22 +1001,6 @@ public class SnapPuller {
   }
 
   /**
-   * Disable periodic polling
-   */
-  void disablePoll() {
-    pollDisabled.set(true);
-    LOG.info("inside disable poll, value of pollDisabled = " + pollDisabled);
-  }
-
-  /**
-   * Enable periodic polling
-   */
-  void enablePoll() {
-    pollDisabled.set(false);
-    LOG.info("inside enable poll, value of pollDisabled = " + pollDisabled);
-  }
-
-  /**
    * Stops the ongoing pull
    */
   void abortPull() {
@@ -1076,6 +1009,13 @@ public class SnapPuller {
 
   long getReplicationStartTime() {
     return replicationStartTime;
+  }
+
+  long getReplicationTimeElapsed() {
+    long timeElapsed = 0;
+    if (getReplicationStartTime() > 0)
+      timeElapsed = TimeUnit.SECONDS.convert(System.currentTimeMillis() - getReplicationStartTime(), TimeUnit.MILLISECONDS);
+    return timeElapsed;
   }
 
   List<Map<String, Object>> getConfFilesToDownload() {
@@ -1113,17 +1053,6 @@ public class SnapPuller {
     if (tmpFileFetcher != null)
       tmp.put("bytesDownloaded", tmpFileFetcher.bytesDownloaded);
     return tmp;
-  }
-
-  boolean isPollingDisabled() {
-    return pollDisabled.get();
-  }
-
-  Long getNextScheduledExecTime() {
-    Long nextTime = null;
-    if (executorStartTime > 0)
-      nextTime = executorStartTime + pollInterval;
-    return nextTime;
   }
 
   private static class ReplicationHandlerException extends InterruptedException {
@@ -1670,57 +1599,12 @@ public class SnapPuller {
     return rsp;
   }
 
-  static Integer readInterval(String interval) {
-    if (interval == null)
-      return null;
-    int result = 0;
-    if (interval != null) {
-      Matcher m = INTERVAL_PATTERN.matcher(interval.trim());
-      if (m.find()) {
-        String hr = m.group(1);
-        String min = m.group(2);
-        String sec = m.group(3);
-        result = 0;
-        try {
-          if (sec != null && sec.length() > 0)
-            result += Integer.parseInt(sec);
-          if (min != null && min.length() > 0)
-            result += (60 * Integer.parseInt(min));
-          if (hr != null && hr.length() > 0)
-            result += (60 * 60 * Integer.parseInt(hr));
-          result *= 1000;
-        } catch (NumberFormatException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  INTERVAL_ERR_MSG);
-        }
-      } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                INTERVAL_ERR_MSG);
-      }
-
-    }
-    return result;
-  }
-
   public void destroy() {
-    try {
-      if (executorService != null) executorService.shutdown();
-    } finally {
-      try {
-        abortPull();
-      } finally {
-        if (executorService != null) ExecutorUtil
-            .shutdownNowAndAwaitTermination(executorService);
-      }
-    }
+    abortPull();
   }
 
   String getMasterUrl() {
     return masterUrl;
-  }
-
-  String getPollInterval() {
-    return pollIntervalStr;
   }
 
   private static final int MAX_RETRIES = 5;
@@ -1730,12 +1614,6 @@ public class SnapPuller {
   private static final int ERR = 2;
 
   public static final String REPLICATION_PROPERTIES = "replication.properties";
-
-  public static final String POLL_INTERVAL = "pollInterval";
-
-  public static final String INTERVAL_ERR_MSG = "The " + POLL_INTERVAL + " must be in this format 'HH:mm:ss'";
-
-  private static final Pattern INTERVAL_PATTERN = Pattern.compile("(\\d*?):(\\d*?):(\\d*)");
 
   static final String INDEX_REPLICATED_AT = "indexReplicatedAt";
 

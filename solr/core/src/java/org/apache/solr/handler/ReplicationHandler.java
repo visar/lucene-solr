@@ -38,9 +38,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.DeflaterOutputStream;
@@ -60,6 +64,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -76,6 +81,7 @@ import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexWriter;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
@@ -152,20 +158,37 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private boolean replicateOnCommit = false;
 
   private boolean replicateOnStart = false;
-  
+
+  private ScheduledExecutorService executorService;
+
+  private volatile long executorStartTime;
+
   private int numberBackupsToKeep = 0; //zero: do not delete old backups
 
   private int numTimesReplicated = 0;
 
   private final Map<String, FileInfo> confFileInfoCache = new HashMap<>();
 
-  private Integer reserveCommitDuration = SnapPuller.readInterval("00:00:10");
+  private Integer reserveCommitDuration = readInterval("00:00:10");
 
   volatile IndexCommit indexCommitPoint;
 
   volatile NamedList<Object> snapShootDetails;
 
   private AtomicBoolean replicationEnabled = new AtomicBoolean(true);
+
+  private Integer pollInterval;
+
+  private String pollIntervalStr;
+
+  /**
+   * Disable the timer task for polling
+   */
+  private AtomicBoolean pollDisabled = new AtomicBoolean(false);
+
+  String getPollInterval() {
+    return pollIntervalStr;
+  }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -212,7 +235,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_DELETE_BACKUP)) {
-      deleteSnapshot(new ModifiableSolrParams(solrParams), rsp, req);
+      deleteSnapshot(new ModifiableSolrParams(solrParams));
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
       String masterUrl = solrParams.get(MASTER_URL);
@@ -222,21 +245,21 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         return;
       }
       final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
-      Thread puller = new Thread("explicit-fetchindex-cmd") {
+      Thread fetchThread = new Thread("explicit-fetchindex-cmd") {
         @Override
         public void run() {
           doFetch(paramsCopy, false);
         }
       };
-      puller.setDaemon(false);
-      puller.start();
+      fetchThread.setDaemon(false);
+      fetchThread.start();
       if (solrParams.getBool(WAIT, false)) {
-        puller.join();
+        fetchThread.join();
       }
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
       if (snapPuller != null){
-        snapPuller.disablePoll();
+        disablePoll();
         rsp.add(STATUS, OK_STATUS);
       } else {
         rsp.add(STATUS, ERR_STATUS);
@@ -244,16 +267,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     } else if (command.equalsIgnoreCase(CMD_ENABLE_POLL)) {
       if (snapPuller != null){
-        snapPuller.enablePoll();
+        enablePoll();
         rsp.add(STATUS, OK_STATUS);
       }else {
         rsp.add(STATUS,ERR_STATUS);
         rsp.add("message","No slave configured");
       }
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
-      SnapPuller temp = tempSnapPuller;
-      if (temp != null){
-        temp.abortPull();
+      SnapPuller puller = tempSnapPuller;
+      if (puller != null){
+        puller.abortPull();
         rsp.add(STATUS, OK_STATUS);
       } else {
         rsp.add(STATUS,ERR_STATUS);
@@ -272,7 +295,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private void deleteSnapshot(ModifiableSolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
+  private void deleteSnapshot(ModifiableSolrParams params) {
     String name = params.get("name");
     if(name == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Missing mandatory param: name");
@@ -331,9 +354,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     try {
       tempSnapPuller = snapPuller;
       if (masterUrl != null) {
-        NamedList<Object> nl = solrParams.toNamedList();
-        nl.remove(SnapPuller.POLL_INTERVAL);
-        tempSnapPuller = new SnapPuller(nl, this, core);
+        tempSnapPuller = new SnapPuller(solrParams.toNamedList(), this, core);
       }
       return tempSnapPuller.fetchLatestIndex(core, forceReplication);
     } catch (Exception e) {
@@ -421,7 +442,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // reserve the indexcommit for sometime
     core.getDeletionPolicy().setReserveDuration(gen, reserveCommitDuration);
     List<Map<String, Object>> result = new ArrayList<>();
-    Directory dir = null;
+    Directory dir;
     try {
       // get all the files in the commit
       // use a set to workaround possible Lucene bug which returns same file
@@ -507,18 +528,28 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   void disablePoll() {
-    if (isSlave)
-      snapPuller.disablePoll();
+    if (isSlave) {
+      pollDisabled.set(true);
+      LOG.info("inside disable poll, value of pollDisabled = " + pollDisabled);
+    }
   }
 
   void enablePoll() {
-    if (isSlave)
-      snapPuller.enablePoll();
+    if (isSlave) {
+      pollDisabled.set(false);
+      LOG.info("inside enable poll, value of pollDisabled = " + pollDisabled);
+    }
   }
 
   boolean isPollingDisabled() {
-    if (snapPuller == null) return true;
-    return snapPuller.isPollingDisabled();
+    return pollDisabled.get();
+  }
+
+  Long getNextScheduledExecTime() {
+    Long nextTime = null;
+    if (executorStartTime > 0)
+      nextTime = executorStartTime + pollInterval;
+    return nextTime;
   }
 
   int getTimesReplicatedSinceStartup() {
@@ -580,16 +611,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       list.add("isMaster", String.valueOf(isMaster));
       list.add("isSlave", String.valueOf(isSlave));
 
-      SnapPuller snapPuller = tempSnapPuller;
-      if (snapPuller != null) {
-        list.add(MASTER_URL, snapPuller.getMasterUrl());
-        if (snapPuller.getPollInterval() != null) {
-          list.add(SnapPuller.POLL_INTERVAL, snapPuller.getPollInterval());
+      SnapPuller puller = tempSnapPuller;
+      if (puller != null) {
+        list.add(MASTER_URL, puller.getMasterUrl());
+        if (getPollInterval() != null) {
+          list.add(POLL_INTERVAL, getPollInterval());
         }
         list.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
         list.add("isReplicating", String.valueOf(isReplicating()));
-        long elapsed = getTimeElapsed(snapPuller);
-        long val = SnapPuller.getTotalBytesDownloaded(snapPuller);
+        long elapsed = puller.getReplicationTimeElapsed();
+        long val = puller.getTotalBytesDownloaded();
         if (elapsed > 0) {
           list.add("timeElapsed", elapsed);
           list.add("bytesDownloaded", val);
@@ -646,12 +677,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       master.add("replicableGeneration", repCommitInfo.generation);
     }
 
-    SnapPuller snapPuller = tempSnapPuller;
-    if (snapPuller != null) {
+    SnapPuller puller = tempSnapPuller;
+    if (puller != null) {
       Properties props = loadReplicationProperties();
       if (showSlaveDetails) {
         try {
-          NamedList nl = snapPuller.getDetails();
+          NamedList nl = puller.getDetails();
           slave.add("masterDetails", nl.get(CMD_DETAILS));
         } catch (Exception e) {
           LOG.warn(
@@ -660,12 +691,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           slave.add(ERR_STATUS, "invalid_master");
         }
       }
-      slave.add(MASTER_URL, snapPuller.getMasterUrl());
-      if (snapPuller.getPollInterval() != null) {
-        slave.add(SnapPuller.POLL_INTERVAL, snapPuller.getPollInterval());
+      slave.add(MASTER_URL, puller.getMasterUrl());
+      if (getPollInterval() != null) {
+        slave.add(POLL_INTERVAL, getPollInterval());
       }
-      if (snapPuller.getNextScheduledExecTime() != null && !isPollingDisabled()) {
-        slave.add(NEXT_EXECUTION_AT, new Date(snapPuller.getNextScheduledExecTime()).toString());
+      if (getNextScheduledExecTime() != null && !isPollingDisabled()) {
+        slave.add(NEXT_EXECUTION_AT, new Date(getNextScheduledExecTime()).toString());
       } else if (isPollingDisabled()) {
         slave.add(NEXT_EXECUTION_AT, "Polling disabled");
       }
@@ -689,13 +720,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         try {
           long bytesToDownload = 0;
           List<String> filesToDownload = new ArrayList<>();
-          for (Map<String, Object> file : snapPuller.getFilesToDownload()) {
+          for (Map<String, Object> file : puller.getFilesToDownload()) {
             filesToDownload.add((String) file.get(NAME));
             bytesToDownload += (Long) file.get(SIZE);
           }
 
           //get list of conf files to download
-          for (Map<String, Object> file : snapPuller.getConfFilesToDownload()) {
+          for (Map<String, Object> file : puller.getConfFilesToDownload()) {
             filesToDownload.add((String) file.get(NAME));
             bytesToDownload += (Long) file.get(SIZE);
           }
@@ -706,18 +737,18 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
           long bytesDownloaded = 0;
           List<String> filesDownloaded = new ArrayList<>();
-          for (Map<String, Object> file : snapPuller.getFilesDownloaded()) {
+          for (Map<String, Object> file : puller.getFilesDownloaded()) {
             filesDownloaded.add((String) file.get(NAME));
             bytesDownloaded += (Long) file.get(SIZE);
           }
 
           //get list of conf files downloaded
-          for (Map<String, Object> file : snapPuller.getConfFilesDownloaded()) {
+          for (Map<String, Object> file : puller.getConfFilesDownloaded()) {
             filesDownloaded.add((String) file.get(NAME));
             bytesDownloaded += (Long) file.get(SIZE);
           }
 
-          Map<String, Object> currentFile = snapPuller.getCurrentFile();
+          Map<String, Object> currentFile = puller.getCurrentFile();
           String currFile = null;
           long currFileSize = 0, currFileSizeDownloaded = 0;
           float percentDownloaded = 0;
@@ -736,10 +767,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
           long estimatedTimeRemaining = 0;
 
-          if (snapPuller.getReplicationStartTime() > 0) {
-            slave.add("replicationStartTime", new Date(snapPuller.getReplicationStartTime()).toString());
+          if (puller.getReplicationStartTime() > 0) {
+            slave.add("replicationStartTime", new Date(puller.getReplicationStartTime()).toString());
           }
-          long elapsed = getTimeElapsed(snapPuller);
+          long elapsed = puller.getReplicationTimeElapsed();
           slave.add("timeElapsed", String.valueOf(elapsed) + "s");
 
           if (bytesDownloaded > 0)
@@ -788,8 +819,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (clzz == List.class) {
       String ss[] = s.split(",");
       List<String> l = new ArrayList<>();
-      for (int i = 0; i < ss.length; i++) {
-        l.add(new Date(Long.valueOf(ss[i])).toString());
+      for (String s1 : ss) {
+        l.add(new Date(Long.valueOf(s1)).toString());
       }
       nl.add(key, l);
     } else {
@@ -807,13 +838,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (replicateOnStart)
       replicateAfter.add("startup");
     return replicateAfter;
-  }
-
-  private long getTimeElapsed(SnapPuller snapPuller) {
-    long timeElapsed = 0;
-    if (snapPuller.getReplicationStartTime() > 0)
-      timeElapsed = TimeUnit.SECONDS.convert(System.currentTimeMillis() - snapPuller.getReplicationStartTime(), TimeUnit.MILLISECONDS);
-    return timeElapsed;
   }
 
   Properties loadReplicationProperties() {
@@ -856,6 +880,37 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 //    }
 //  }
 
+  private void setupPolling(String intervalStr) {
+    pollIntervalStr = intervalStr;
+    pollInterval = readInterval(pollIntervalStr);
+    if (pollInterval == null || pollInterval <= 0) {
+      LOG.info(" No value set for 'pollInterval'. Timer Task not started.");
+      return;
+    }
+
+    Runnable task = new Runnable() {
+      @Override
+      public void run() {
+        if (pollDisabled.get()) {
+          LOG.info("Poll disabled");
+          return;
+        }
+        try {
+          LOG.debug("Polling for index modifications");
+          executorStartTime = System.currentTimeMillis();
+          doFetch(null, false);
+        } catch (Exception e) {
+          LOG.error("Exception in fetching index", e);
+        }
+      }
+    };
+    executorService = Executors.newSingleThreadScheduledExecutor(
+        new DefaultSolrThreadFactory("snapPuller"));
+    long initialDelay = pollInterval - (System.currentTimeMillis() % pollInterval);
+    executorService.scheduleAtFixedRate(task, initialDelay, pollInterval, TimeUnit.MILLISECONDS);
+    LOG.info("Poll Scheduled at an interval of " + pollInterval + "ms");
+  }
+
   @Override
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
@@ -872,6 +927,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     boolean enableSlave = isEnabled( slave );
     if (enableSlave) {
       tempSnapPuller = snapPuller = new SnapPuller(slave, this, core);
+      setupPolling((String) slave.get(POLL_INTERVAL));
       isSlave = true;
     }
     NamedList master = (NamedList) initArgs.get("master");
@@ -975,7 +1031,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       String reserve = (String) master.get(RESERVE);
       if (reserve != null && !reserve.trim().equals("")) {
-        reserveCommitDuration = SnapPuller.readInterval(reserve);
+        reserveCommitDuration = readInterval(reserve);
       }
       LOG.info("Commits will be reserved for  " + reserveCommitDuration);
       isMaster = true;
@@ -999,8 +1055,17 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     core.addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {
-        if (snapPuller != null) {
-          snapPuller.destroy();
+        try {
+          if (executorService != null) executorService.shutdown();
+        } finally {
+          try {
+            if (snapPuller != null) {
+              snapPuller.destroy();
+            }
+          } finally {
+            if (executorService != null) ExecutorUtil
+                .shutdownNowAndAwaitTermination(executorService);
+          }
         }
       }
 
@@ -1299,8 +1364,40 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         releaseCommitPointAndExtendReserve();
       }
     }
-  } 
-  
+  }
+
+  static Integer readInterval(String interval) {
+    if (interval == null)
+      return null;
+    int result = 0;
+    if (interval != null) {
+      Matcher m = INTERVAL_PATTERN.matcher(interval.trim());
+      if (m.find()) {
+        String hr = m.group(1);
+        String min = m.group(2);
+        String sec = m.group(3);
+        result = 0;
+        try {
+          if (sec != null && sec.length() > 0)
+            result += Integer.parseInt(sec);
+          if (min != null && min.length() > 0)
+            result += (60 * Integer.parseInt(min));
+          if (hr != null && hr.length() > 0)
+            result += (60 * 60 * Integer.parseInt(hr));
+          result *= 1000;
+        } catch (NumberFormatException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              INTERVAL_ERR_MSG);
+        }
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            INTERVAL_ERR_MSG);
+      }
+
+    }
+    return result;
+  }
+
   public static final String MASTER_URL = "masterUrl";
 
   public static final String STATUS = "status";
@@ -1360,6 +1457,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String REPLICATE_AFTER = "replicateAfter";
 
   public static final String FILE_STREAM = "filestream";
+
+  public static final String POLL_INTERVAL = "pollInterval";
+
+  public static final String INTERVAL_ERR_MSG = "The " + POLL_INTERVAL + " must be in this format 'HH:mm:ss'";
+
+  private static final Pattern INTERVAL_PATTERN = Pattern.compile("(\\d*?):(\\d*?):(\\d*)");
 
   public static final int PACKET_SZ = 1024 * 1024; // 1MB
 
