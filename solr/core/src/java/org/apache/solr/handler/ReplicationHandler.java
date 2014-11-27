@@ -141,7 +141,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private SnapPuller snapPuller;
+  private IndexFetcher indexFetcher;
 
   private ReentrantLock snapPullLock = new ReentrantLock();
 
@@ -258,7 +258,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
-      if (snapPuller != null){
+      if (indexFetcher != null){
         disablePoll();
         rsp.add(STATUS, OK_STATUS);
       } else {
@@ -266,7 +266,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         rsp.add("message","No slave configured");
       }
     } else if (command.equalsIgnoreCase(CMD_ENABLE_POLL)) {
-      if (snapPuller != null){
+      if (indexFetcher != null){
         enablePoll();
         rsp.add(STATUS, OK_STATUS);
       }else {
@@ -274,7 +274,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         rsp.add("message","No slave configured");
       }
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
-      SnapPuller puller = tempSnapPuller;
+      IndexFetcher puller = tempIndexFetcher;
       if (puller != null){
         puller.abortPull();
         rsp.add(STATUS, OK_STATUS);
@@ -345,23 +345,23 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return null;
   }
 
-  private volatile SnapPuller tempSnapPuller;
+  private volatile IndexFetcher tempIndexFetcher;
 
   public boolean doFetch(SolrParams solrParams, boolean forceReplication) {
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
     if (!snapPullLock.tryLock())
       return false;
     try {
-      tempSnapPuller = snapPuller;
+      tempIndexFetcher = indexFetcher;
       if (masterUrl != null) {
-        tempSnapPuller = new SnapPuller(solrParams.toNamedList(), this, core);
+        tempIndexFetcher = new IndexFetcher(solrParams.toNamedList(), this, core);
       }
-      return tempSnapPuller.fetchLatestIndex(core, forceReplication);
+      return tempIndexFetcher.fetchLatestIndex(core, forceReplication);
     } catch (Exception e) {
       SolrException.log(LOG, "SnapPull failed ", e);
     } finally {
-      if (snapPuller != null) {
-        tempSnapPuller = snapPuller;
+      if (indexFetcher != null) {
+        tempIndexFetcher = indexFetcher;
       }
       snapPullLock.unlock();
     }
@@ -407,10 +407,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   /**
    * This method adds an Object of FileStream to the response . The FileStream implements a custom protocol which is
-   * understood by SnapPuller.FileFetcher
+   * understood by IndexFetcher.FileFetcher
    *
-   * @see org.apache.solr.handler.SnapPuller.LocalFsFileFetcher
-   * @see org.apache.solr.handler.SnapPuller.DirectoryFileFetcher
+   * @see IndexFetcher.LocalFsFileFetcher
+   * @see IndexFetcher.DirectoryFileFetcher
    */
   private void getFileStream(SolrParams solrParams, SolrQueryResponse rsp) {
     ModifiableSolrParams rawParams = new ModifiableSolrParams(solrParams);
@@ -611,7 +611,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       list.add("isMaster", String.valueOf(isMaster));
       list.add("isSlave", String.valueOf(isSlave));
 
-      SnapPuller puller = tempSnapPuller;
+      IndexFetcher puller = tempIndexFetcher;
       if (puller != null) {
         list.add(MASTER_URL, puller.getMasterUrl());
         if (getPollInterval() != null) {
@@ -627,15 +627,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           list.add("downloadSpeed", val / elapsed);
         }
         Properties props = loadReplicationProperties();
-        addVal(list, SnapPuller.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
-        addVal(list, SnapPuller.INDEX_REPLICATED_AT, props, Date.class);
-        addVal(list, SnapPuller.CONF_FILES_REPLICATED_AT, props, Date.class);
-        addVal(list, SnapPuller.REPLICATION_FAILED_AT, props, Date.class);
-        addVal(list, SnapPuller.TIMES_FAILED, props, Integer.class);
-        addVal(list, SnapPuller.TIMES_INDEX_REPLICATED, props, Integer.class);
-        addVal(list, SnapPuller.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
-        addVal(list, SnapPuller.TIMES_CONFIG_REPLICATED, props, Integer.class);
-        addVal(list, SnapPuller.CONF_FILES_REPLICATED, props, String.class);
+        addVal(list, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+        addVal(list, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
+        addVal(list, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Date.class);
+        addVal(list, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
+        addVal(list, IndexFetcher.TIMES_FAILED, props, Integer.class);
+        addVal(list, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
+        addVal(list, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
+        addVal(list, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
+        addVal(list, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
       }
       if (isMaster) {
         if (includeConfFiles != null) list.add("confFilesToReplicate", includeConfFiles);
@@ -677,7 +677,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       master.add("replicableGeneration", repCommitInfo.generation);
     }
 
-    SnapPuller puller = tempSnapPuller;
+    IndexFetcher puller = tempIndexFetcher;
     if (puller != null) {
       Properties props = loadReplicationProperties();
       if (showSlaveDetails) {
@@ -700,17 +700,17 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       } else if (isPollingDisabled()) {
         slave.add(NEXT_EXECUTION_AT, "Polling disabled");
       }
-      addVal(slave, SnapPuller.INDEX_REPLICATED_AT, props, Date.class);
-      addVal(slave, SnapPuller.INDEX_REPLICATED_AT_LIST, props, List.class);
-      addVal(slave, SnapPuller.REPLICATION_FAILED_AT_LIST, props, List.class);
-      addVal(slave, SnapPuller.TIMES_INDEX_REPLICATED, props, Integer.class);
-      addVal(slave, SnapPuller.CONF_FILES_REPLICATED, props, Integer.class);
-      addVal(slave, SnapPuller.TIMES_CONFIG_REPLICATED, props, Integer.class);
-      addVal(slave, SnapPuller.CONF_FILES_REPLICATED_AT, props, Integer.class);
-      addVal(slave, SnapPuller.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
-      addVal(slave, SnapPuller.TIMES_FAILED, props, Integer.class);
-      addVal(slave, SnapPuller.REPLICATION_FAILED_AT, props, Date.class);
-      addVal(slave, SnapPuller.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+      addVal(slave, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
+      addVal(slave, IndexFetcher.INDEX_REPLICATED_AT_LIST, props, List.class);
+      addVal(slave, IndexFetcher.REPLICATION_FAILED_AT_LIST, props, List.class);
+      addVal(slave, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
+      addVal(slave, IndexFetcher.CONF_FILES_REPLICATED, props, Integer.class);
+      addVal(slave, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
+      addVal(slave, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Integer.class);
+      addVal(slave, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
+      addVal(slave, IndexFetcher.TIMES_FAILED, props, Integer.class);
+      addVal(slave, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
+      addVal(slave, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
 
       slave.add("currentDate", new Date().toString());
       slave.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
@@ -849,7 +849,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         IndexInput input;
         try {
           input = dir.openInput(
-            SnapPuller.REPLICATION_PROPERTIES, IOContext.DEFAULT);
+            IndexFetcher.REPLICATION_PROPERTIES, IOContext.DEFAULT);
         } catch (FileNotFoundException | NoSuchFileException e) {
           return new Properties();
         }
@@ -905,7 +905,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     };
     executorService = Executors.newSingleThreadScheduledExecutor(
-        new DefaultSolrThreadFactory("snapPuller"));
+        new DefaultSolrThreadFactory("indexFetcher"));
     long initialDelay = pollInterval - (System.currentTimeMillis() % pollInterval);
     executorService.scheduleAtFixedRate(task, initialDelay, pollInterval, TimeUnit.MILLISECONDS);
     LOG.info("Poll Scheduled at an interval of " + pollInterval + "ms");
@@ -926,7 +926,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     NamedList slave = (NamedList) initArgs.get("slave");
     boolean enableSlave = isEnabled( slave );
     if (enableSlave) {
-      tempSnapPuller = snapPuller = new SnapPuller(slave, this, core);
+      tempIndexFetcher = indexFetcher = new IndexFetcher(slave, this, core);
       setupPolling((String) slave.get(POLL_INTERVAL));
       isSlave = true;
     }
@@ -1059,8 +1059,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           if (executorService != null) executorService.shutdown();
         } finally {
           try {
-            if (snapPuller != null) {
-              snapPuller.destroy();
+            if (indexFetcher != null) {
+              indexFetcher.destroy();
             }
           } finally {
             if (executorService != null) ExecutorUtil

@@ -300,7 +300,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       assertNotNull("slave has slave section", 
                     details.get("slave"));
       // SOLR-2677: assert not false negatives
-      Object timesFailed = ((NamedList)details.get("slave")).get(SnapPuller.TIMES_FAILED);
+      Object timesFailed = ((NamedList)details.get("slave")).get(IndexFetcher.TIMES_FAILED);
       assertEquals("slave has fetch error count",
                    null, timesFailed);
 
@@ -379,7 +379,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertNull( core.getDeletionPolicy().getLatestCommit() );
 
 
-    pullFromMasterToSlave();  // this will cause SnapPuller to be invoked and we will test when SolrDeletionPolicy.getLatestCommit() returns null
+    pullFromMasterToSlave();  // this will cause IndexFetcher to be invoked and we will test when SolrDeletionPolicy.getLatestCommit() returns null
 
     resetFactory();
   }

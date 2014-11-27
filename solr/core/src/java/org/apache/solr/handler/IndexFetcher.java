@@ -112,10 +112,10 @@ import static org.apache.solr.handler.ReplicationHandler.SIZE;
  *
  * @since solr 1.4
  */
-public class SnapPuller {
+public class IndexFetcher {
   public static final String INDEX_PROPERTIES = "index.properties";
 
-  private static final Logger LOG = LoggerFactory.getLogger(SnapPuller.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(IndexFetcher.class.getName());
 
   private final String masterUrl;
 
@@ -162,7 +162,7 @@ public class SnapPuller {
     return httpClient;
   }
 
-  public SnapPuller(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
+  public IndexFetcher(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
     solrCore = sc;
     String masterUrl = (String) initArgs.get(MASTER_URL);
     if (masterUrl == null)
@@ -893,33 +893,33 @@ public class SnapPuller {
     Directory dir = null;
     try {
       dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), DirContext.META_DATA, solrCore.getSolrConfig().indexConfig.lockType);
-      if (slowFileExists(dir, SnapPuller.INDEX_PROPERTIES)){
-        final IndexInput input = dir.openInput(SnapPuller.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      if (slowFileExists(dir, IndexFetcher.INDEX_PROPERTIES)){
+        final IndexInput input = dir.openInput(IndexFetcher.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
   
         final InputStream is = new PropertiesInputStream(input);
         try {
           p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
         } catch (Exception e) {
-          LOG.error("Unable to load " + SnapPuller.INDEX_PROPERTIES, e);
+          LOG.error("Unable to load " + IndexFetcher.INDEX_PROPERTIES, e);
         } finally {
           IOUtils.closeQuietly(is);
         }
       }
       try {
-        dir.deleteFile(SnapPuller.INDEX_PROPERTIES);
+        dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
       } catch (IOException e) {
         // no problem
       }
-      final IndexOutput out = dir.createOutput(SnapPuller.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      final IndexOutput out = dir.createOutput(IndexFetcher.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
       p.put("index", tmpIdxDirName);
       Writer os = null;
       try {
         os = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
-        p.store(os, SnapPuller.INDEX_PROPERTIES);
+        p.store(os, IndexFetcher.INDEX_PROPERTIES);
         dir.sync(Collections.singleton(INDEX_PROPERTIES));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to write " + SnapPuller.INDEX_PROPERTIES, e);
+            "Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
       } finally {
         IOUtils.closeQuietly(os);
       }
