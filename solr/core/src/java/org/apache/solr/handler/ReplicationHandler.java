@@ -141,7 +141,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private IndexFetcher indexFetcher;
+  private IndexFetcher pollingIndexFetcher;
 
   private ReentrantLock snapPullLock = new ReentrantLock();
 
@@ -258,7 +258,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
-      if (indexFetcher != null){
+      if (pollingIndexFetcher != null) {
         disablePoll();
         rsp.add(STATUS, OK_STATUS);
       } else {
@@ -266,7 +266,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         rsp.add("message","No slave configured");
       }
     } else if (command.equalsIgnoreCase(CMD_ENABLE_POLL)) {
-      if (indexFetcher != null){
+      if (pollingIndexFetcher != null) {
         enablePoll();
         rsp.add(STATUS, OK_STATUS);
       }else {
@@ -274,9 +274,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         rsp.add("message","No slave configured");
       }
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
-      IndexFetcher puller = tempIndexFetcher;
-      if (puller != null){
-        puller.abortPull();
+      IndexFetcher fetcher = currentIndexFetcher;
+      if (fetcher != null) {
+        fetcher.abortPull();
         rsp.add(STATUS, OK_STATUS);
       } else {
         rsp.add(STATUS,ERR_STATUS);
@@ -345,23 +345,23 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return null;
   }
 
-  private volatile IndexFetcher tempIndexFetcher;
+  private volatile IndexFetcher currentIndexFetcher;
 
   public boolean doFetch(SolrParams solrParams, boolean forceReplication) {
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
     if (!snapPullLock.tryLock())
       return false;
     try {
-      tempIndexFetcher = indexFetcher;
+      currentIndexFetcher = pollingIndexFetcher;
       if (masterUrl != null) {
-        tempIndexFetcher = new IndexFetcher(solrParams.toNamedList(), this, core);
+        currentIndexFetcher = new IndexFetcher(solrParams.toNamedList(), this, core);
       }
-      return tempIndexFetcher.fetchLatestIndex(core, forceReplication);
+      return currentIndexFetcher.fetchLatestIndex(core, forceReplication);
     } catch (Exception e) {
       SolrException.log(LOG, "SnapPull failed ", e);
     } finally {
-      if (indexFetcher != null) {
-        tempIndexFetcher = indexFetcher;
+      if (pollingIndexFetcher != null) {
+        currentIndexFetcher = pollingIndexFetcher;
       }
       snapPullLock.unlock();
     }
@@ -611,16 +611,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       list.add("isMaster", String.valueOf(isMaster));
       list.add("isSlave", String.valueOf(isSlave));
 
-      IndexFetcher puller = tempIndexFetcher;
-      if (puller != null) {
-        list.add(MASTER_URL, puller.getMasterUrl());
+      IndexFetcher fetcher = currentIndexFetcher;
+      if (fetcher != null) {
+        list.add(MASTER_URL, fetcher.getMasterUrl());
         if (getPollInterval() != null) {
           list.add(POLL_INTERVAL, getPollInterval());
         }
         list.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
         list.add("isReplicating", String.valueOf(isReplicating()));
-        long elapsed = puller.getReplicationTimeElapsed();
-        long val = puller.getTotalBytesDownloaded();
+        long elapsed = fetcher.getReplicationTimeElapsed();
+        long val = fetcher.getTotalBytesDownloaded();
         if (elapsed > 0) {
           list.add("timeElapsed", elapsed);
           list.add("bytesDownloaded", val);
@@ -677,12 +677,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       master.add("replicableGeneration", repCommitInfo.generation);
     }
 
-    IndexFetcher puller = tempIndexFetcher;
-    if (puller != null) {
+    IndexFetcher fetcher = currentIndexFetcher;
+    if (fetcher != null) {
       Properties props = loadReplicationProperties();
       if (showSlaveDetails) {
         try {
-          NamedList nl = puller.getDetails();
+          NamedList nl = fetcher.getDetails();
           slave.add("masterDetails", nl.get(CMD_DETAILS));
         } catch (Exception e) {
           LOG.warn(
@@ -691,7 +691,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           slave.add(ERR_STATUS, "invalid_master");
         }
       }
-      slave.add(MASTER_URL, puller.getMasterUrl());
+      slave.add(MASTER_URL, fetcher.getMasterUrl());
       if (getPollInterval() != null) {
         slave.add(POLL_INTERVAL, getPollInterval());
       }
@@ -720,13 +720,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         try {
           long bytesToDownload = 0;
           List<String> filesToDownload = new ArrayList<>();
-          for (Map<String, Object> file : puller.getFilesToDownload()) {
+          for (Map<String, Object> file : fetcher.getFilesToDownload()) {
             filesToDownload.add((String) file.get(NAME));
             bytesToDownload += (Long) file.get(SIZE);
           }
 
           //get list of conf files to download
-          for (Map<String, Object> file : puller.getConfFilesToDownload()) {
+          for (Map<String, Object> file : fetcher.getConfFilesToDownload()) {
             filesToDownload.add((String) file.get(NAME));
             bytesToDownload += (Long) file.get(SIZE);
           }
@@ -737,18 +737,18 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
           long bytesDownloaded = 0;
           List<String> filesDownloaded = new ArrayList<>();
-          for (Map<String, Object> file : puller.getFilesDownloaded()) {
+          for (Map<String, Object> file : fetcher.getFilesDownloaded()) {
             filesDownloaded.add((String) file.get(NAME));
             bytesDownloaded += (Long) file.get(SIZE);
           }
 
           //get list of conf files downloaded
-          for (Map<String, Object> file : puller.getConfFilesDownloaded()) {
+          for (Map<String, Object> file : fetcher.getConfFilesDownloaded()) {
             filesDownloaded.add((String) file.get(NAME));
             bytesDownloaded += (Long) file.get(SIZE);
           }
 
-          Map<String, Object> currentFile = puller.getCurrentFile();
+          Map<String, Object> currentFile = fetcher.getCurrentFile();
           String currFile = null;
           long currFileSize = 0, currFileSizeDownloaded = 0;
           float percentDownloaded = 0;
@@ -767,10 +767,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
           long estimatedTimeRemaining = 0;
 
-          if (puller.getReplicationStartTime() > 0) {
-            slave.add("replicationStartTime", new Date(puller.getReplicationStartTime()).toString());
+          if (fetcher.getReplicationStartTime() > 0) {
+            slave.add("replicationStartTime", new Date(fetcher.getReplicationStartTime()).toString());
           }
-          long elapsed = puller.getReplicationTimeElapsed();
+          long elapsed = fetcher.getReplicationTimeElapsed();
           slave.add("timeElapsed", String.valueOf(elapsed) + "s");
 
           if (bytesDownloaded > 0)
@@ -905,7 +905,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     };
     executorService = Executors.newSingleThreadScheduledExecutor(
-        new DefaultSolrThreadFactory("indexFetcher"));
+        new DefaultSolrThreadFactory("pollingIndexFetcher"));
     long initialDelay = pollInterval - (System.currentTimeMillis() % pollInterval);
     executorService.scheduleAtFixedRate(task, initialDelay, pollInterval, TimeUnit.MILLISECONDS);
     LOG.info("Poll Scheduled at an interval of " + pollInterval + "ms");
@@ -926,7 +926,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     NamedList slave = (NamedList) initArgs.get("slave");
     boolean enableSlave = isEnabled( slave );
     if (enableSlave) {
-      tempIndexFetcher = indexFetcher = new IndexFetcher(slave, this, core);
+      currentIndexFetcher = pollingIndexFetcher = new IndexFetcher(slave, this, core);
       setupPolling((String) slave.get(POLL_INTERVAL));
       isSlave = true;
     }
@@ -1059,8 +1059,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           if (executorService != null) executorService.shutdown();
         } finally {
           try {
-            if (indexFetcher != null) {
-              indexFetcher.destroy();
+            if (pollingIndexFetcher != null) {
+              pollingIndexFetcher.destroy();
             }
           } finally {
             if (executorService != null) ExecutorUtil
