@@ -10,6 +10,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.BoostedQuery;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseNearQueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
@@ -21,7 +23,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
-
 import org.w3c.dom.Element;
 
 /*
@@ -53,11 +54,15 @@ public class GenericTextQueryBuilder implements QueryBuilder {
   private static final char WILDCARD_STRING = '*';
   private static final char WILDCARD_CHAR = '?';
   private static final char WILDCARD_ESCAPE = '\\';
+  private static final String ENV_GTQB_USE_NEAR_QUERY = "GenericTextQueryBuilder.useNearQuery";
+  private boolean useNearQueryForComplexText = false;
   
   
   public GenericTextQueryBuilder(Analyzer analyzer) {
     this.analyzer = analyzer;
+    useNearQueryForComplexText = java.lang.Boolean.getBoolean(ENV_GTQB_USE_NEAR_QUERY);
   }
+  
    
   @Override
   public Query getQuery(Element e) throws ParserException {
@@ -67,24 +72,35 @@ public class GenericTextQueryBuilder implements QueryBuilder {
 
       if (containsWildcard(text))
       {
-          // send all wildcard queries to the ComplexPhraseQueryParser
-          ComplexPhraseQueryParser parser = new ComplexPhraseQueryParser(Version.LUCENE_CURRENT, field, analyzer);
-          parser.setAllowLeadingWildcard(true);
-          parser.setInOrder(DOMUtils.getAttribute(e, "inOrder", true));
-          float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
-          Query q = null;
-          try {
-              String qText = "\"" + text + "\"";
-              q = parser.parse(qText);
-          } catch (ParseException pe){
-              throw new ParserException("GenericTextQueryBuilder error parsing ComplexPhraseQuery: " + text, pe);
-          }
-          
-          if (boost != 1.0f) {
-            q = new BoostedQuery(q, new ConstValueSource(boost));
-          }
-          
-          return q;
+        //send all wildcard queries to either ComplexPhraseNearQueryParser or ComplexPhraseQueryParser
+        //ComplexPhraseNearQueryParser is supposed to yield in Ordered Interval queries where as  ComplexPhraseQueryParser can result in SpanQuery queries.
+        QueryParser parser = null;
+        
+        if(useNearQueryForComplexText)
+        {
+          parser = new ComplexPhraseNearQueryParser(Version.LUCENE_CURRENT, field, analyzer);
+        }
+        else
+        {
+          ComplexPhraseQueryParser p = new ComplexPhraseQueryParser(Version.LUCENE_CURRENT, field, analyzer);
+          p.setInOrder(DOMUtils.getAttribute(e, "inOrder", true));
+          text = "\"" + text + "\"";
+          parser = p;
+        }
+        parser.setAllowLeadingWildcard(true);
+        Query q = null;
+        try {
+            q = parser.parse(text);
+        } catch (ParseException pe){
+            throw new ParserException("GenericTextQueryBuilder error parsing ComplexPhraseQuery: " + text, pe);
+        }
+        
+        float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
+        if (boost != 1.0f) {
+          q = new BoostedQuery(q, new ConstValueSource(boost));
+        }
+        
+        return q;
       }
       
       PhraseQuery pq = null;//this will be instantiated only if the query results in multiple terms
