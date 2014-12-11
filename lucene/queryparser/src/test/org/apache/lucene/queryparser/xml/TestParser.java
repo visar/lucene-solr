@@ -29,15 +29,23 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.FieldedQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.intervals.FieldedBooleanQuery;
+import org.apache.lucene.search.intervals.OrderedNearQuery;
+import org.apache.lucene.search.intervals.UnorderedNearQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
@@ -345,6 +353,11 @@ public class TestParser extends LuceneTestCase {
     Query q = parse("ComplexPhraseQueryPrefixQuery.xml");
     dumpResults("ComplexPhraseQuery with a single prefix query term", q, 5);
   }
+  
+  public void testComplexPhraseNearQueryXML() throws Exception {
+    Query q = parse("ComplexPhraseNearQuery.xml");
+    dumpResults("ComplexPhraseNearQuery", q, 5);
+  }
 
   public void testMatchAllDocsPlusFilterXML() throws ParserException, IOException {
     Query q = parse("MatchAllDocsQuery.xml");
@@ -383,6 +396,56 @@ public class TestParser extends LuceneTestCase {
     Query q = parse("NumericRangeQueryQuery.xml");
     dumpResults("NumericRangeQuery", q, 5);
   }
+  
+  public void testNearFirstXML() throws ParserException, IOException {
+    Query q = parse("NearFirst.xml");
+    dumpResults("Near First (Interval)", q, 5);
+  }
+  
+  public void testNearNotFirstXML() throws ParserException, IOException {
+    Query q = parse("NearNotFirst.xml");
+    dumpResults("Near Not First (Interval)", q, 5);
+  }
+  
+  public void testNearNearXML() throws ParserException, IOException {
+    Query q = parse("NearNear.xml");
+    dumpResults("Near Near (Interval)", q, 5);
+  }
+  
+  public void testNearOrXML() throws ParserException, IOException {
+    Query q = parse("NearOr.xml");
+    dumpResults("Near Or (Interval)", q, 5);
+  }
+  
+  public void testNearPhraseXML() throws ParserException, IOException {
+    Query q = parse("NearPhrase.xml");
+    dumpResults("Near Phrase (Interval)", q, 5);
+  }
+  
+  public void testNearWildcardXML() throws ParserException, IOException {
+    Query q = parse("NearWildcard.xml");
+    dumpResults("NearWildcard (Interval)", q, 5);
+  }
+  
+  public void testNearTermQuery() throws ParserException, IOException {
+    int slop = 1;
+    FieldedQuery[] subqueries = new FieldedQuery[2];
+    subqueries[0] = new TermQuery(new Term("contents", "keihanshin"));
+    subqueries[1] = new TermQuery(new Term("contents", "real"));
+    Query q = new OrderedNearQuery(slop, true, subqueries);
+    dumpResults("NearPrefixQuery", q, 5);
+  }
+  
+  public void testPrefixedNearQuery() throws ParserException, IOException {
+    int slop = 1;
+    FieldedQuery[] subqueries = new FieldedQuery[2];
+    subqueries[0] = new PrefixQuery(new Term("contents", "keihanshi"));
+    ((MultiTermQuery)subqueries[0]).setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+    subqueries[1] = new PrefixQuery(new Term("contents", "rea"));
+    ((MultiTermQuery)subqueries[1]).setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+    Query q = new OrderedNearQuery(slop, true, subqueries);
+    dumpResults("NearPrefixQuery", q, 5);
+  }
 
   //================= Helper methods ===================================
 
@@ -406,12 +469,12 @@ public class TestParser extends LuceneTestCase {
 
   private void dumpResults(String qType, Query q, int numDocs) throws IOException {
     if (VERBOSE) {
-      System.out.println("TEST: " + q.getClass() + " query=" + q);
+      System.out.println("=======TEST: " + q.getClass() + " query=" + q);
     }
     TopDocs hits = searcher.search(q, null, numDocs);
     assertTrue(qType + " " + q + " should produce results ", hits.totalHits > 0);
     if (VERBOSE) {
-      System.out.println("=========" + qType + "============");
+      System.out.println("=========" + qType + " class=" + q.getClass() + " query=" + q + "============");
       ScoreDoc[] scoreDocs = hits.scoreDocs;
       for (int i = 0; i < Math.min(numDocs, hits.totalHits); i++) {
         Document ldoc = searcher.doc(scoreDocs[i].doc);
