@@ -159,7 +159,7 @@ public class ConnectionManager implements Watcher {
                 // do nothing else
                 
                 if (onReconnect != null) {
-                  Thread thread = new Thread() {
+                  Thread thread = new Thread("onReconnect-"+System.nanoTime()) {
                     @Override
                     public void run() {
                       try {
