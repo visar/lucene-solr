@@ -18,13 +18,11 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,14 +34,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE_DEFAULT;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 
@@ -134,32 +129,16 @@ public class Assign {
     }
   }
 
-  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
-    // TODO: add smarter options that look at the current number of cores per
-    // node?
-    // for now we just go random (except when createNodeSet and createNodeSet.shuffle=false are passed in)
+  public static ArrayList<Node> getNodesForNewShard(ClusterState clusterState, String collectionName, int numSlices, int maxShardsPerNode, int repFactor, String createNodeSetStr) {
+    List<String> createNodeList = createNodeSetStr  == null ? null: StrUtils.splitSmart(createNodeSetStr, ",", true);
 
-    List<String> nodeList;
 
-    final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
-    final List<String> createNodeList = (createNodeSetStr == null)?null:StrUtils.splitSmart(createNodeSetStr, ",", true);
+    Set<String> nodes = clusterState.getLiveNodes();
 
-    if (createNodeList != null) {
-      nodeList = new ArrayList<>(createNodeList);
-      nodeList.retainAll(liveNodes);
-      if (message.getBool(CREATE_NODE_SET_SHUFFLE, CREATE_NODE_SET_SHUFFLE_DEFAULT)) {
-        Collections.shuffle(nodeList, random);
-      }
-    } else {
-      nodeList = new ArrayList<>(liveNodes);
-      Collections.shuffle(nodeList, random);
-    }
-    
-    return nodeList;    
-  }
-  
-  public static ArrayList<Node> getNodesForNewShard(ClusterState clusterState, ZkNodeProps message, String collectionName, int numSlices, int maxShardsPerNode, int repFactor, final String action_description, final Random random) {
-    final List<String> nodeList = getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, random);
+    List<String> nodeList = new ArrayList<>(nodes.size());
+    nodeList.addAll(nodes);
+    if (createNodeList != null) nodeList.retainAll(createNodeList);
+
 
     HashMap<String,Node> nodeNameVsShardCount =  new HashMap<>();
     for (String s : nodeList) nodeNameVsShardCount.put(s,new Node(s));
@@ -181,9 +160,9 @@ public class Assign {
       }
     }
 
-    if (nodeNameVsShardCount.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot "+action_description
-          + ". No suitable Solr-instances among those currently live or live and part of your " + CREATE_NODE_SET + "(" + nodeList +")");
+    if (nodeNameVsShardCount.size() <= 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName
+          + ". No live Solr-instances" + ((createNodeList != null)?" among Solr-instances specified in " + CREATE_NODE_SET + ":" + createNodeSetStr:""));
     }
 
     if (repFactor > nodeNameVsShardCount.size()) {
@@ -193,18 +172,18 @@ public class Assign {
           + repFactor
           + " on collection "
           + collectionName
-          + " is higher than or equal to the number of suitable Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
-          + nodeNameVsShardCount.size()
+          + " is higher than or equal to the number of Solr instances currently live or part of your " + CREATE_NODE_SET + "("
+          + nodeList.size()
           + "). Its unusual to run two replica of the same slice on the same Solr-instance.");
     }
 
-    int maxCoresAllowedToCreate = maxShardsPerNode * nodeNameVsShardCount.size();
+    int maxCoresAllowedToCreate = maxShardsPerNode * nodeList.size();
     int requestedCoresToCreate = numSlices * repFactor;
     int minCoresToCreate = requestedCoresToCreate;
     if (maxCoresAllowedToCreate < minCoresToCreate) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create shards " + collectionName + ". Value of "
           + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
-          + ", and the number of suitable nodes currently live or part and your "+CREATE_NODE_SET+" is " + nodeNameVsShardCount.size()
+          + ", and the number of live nodes is " + nodeList.size()
           + ". This allows a maximum of " + maxCoresAllowedToCreate
           + " to be created. Value of " + NUM_SLICES + " is " + numSlices
           + " and value of " + ZkStateReader.REPLICATION_FACTOR + " is " + repFactor

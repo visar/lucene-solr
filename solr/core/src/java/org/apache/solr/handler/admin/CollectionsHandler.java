@@ -793,7 +793,7 @@ public class CollectionsHandler extends RequestHandlerBase {
       throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections" );
 
     Map<String, Object> map = makeMap(QUEUE_OPERATION, CREATESHARD.toLower());
-    copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, ZkStateReader.REPLICATION_FACTOR, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE, ASYNC);
+    copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, ZkStateReader.REPLICATION_FACTOR, CREATE_NODE_SET, ASYNC);
     copyPropertiesIfNotNull(req.getParams(), map);
     ZkNodeProps m = new ZkNodeProps(map);
     handleResponse(CREATESHARD.toLower(), m, rsp);
@@ -910,7 +910,6 @@ public class CollectionsHandler extends RequestHandlerBase {
     Map<String,Object> props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, CollectionAction.ADDREPLICA.toString());
     copyIfNotNull(req.getParams(), props, COLLECTION_PROP, "node", SHARD_ID_PROP, ShardParams._ROUTE_,
-        CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE,
         CoreAdminParams.NAME, CoreAdminParams.INSTANCE_DIR, CoreAdminParams.DATA_DIR, ASYNC);
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(CollectionAction.ADDREPLICA.toString(), m, rsp);

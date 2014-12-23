@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
  */
 
 import static org.apache.solr.cloud.Assign.getNodesForNewShard;
-import static org.apache.solr.cloud.Assign.getLiveOrLiveAndCreateNodeSetList;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
@@ -174,7 +173,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       ZkStateReader.MAX_SHARDS_PER_NODE, "1",
       ZkStateReader.AUTO_ADD_REPLICAS, "false");
 
-  private static final Random RANDOM;
+  static final Random RANDOM;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
     // based on the current seed
@@ -1337,8 +1336,9 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     DocCollection collection = clusterState.getCollection(collectionName);
     int maxShardsPerNode = collection.getInt(ZkStateReader.MAX_SHARDS_PER_NODE, 1);
     int repFactor = message.getInt(ZkStateReader.REPLICATION_FACTOR, collection.getInt(ZkStateReader.REPLICATION_FACTOR, 1));
+    String createNodeSetStr = message.getStr(CREATE_NODE_SET);
 
-    final ArrayList<Node> sortedNodeList = getNodesForNewShard(clusterState, message, collectionName, numSlices, maxShardsPerNode, repFactor, "create shard for "+collection, RANDOM);
+    ArrayList<Node> sortedNodeList = getNodesForNewShard(clusterState, collectionName, numSlices, maxShardsPerNode, repFactor, createNodeSetStr);
 
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
     // wait for a while until we see the shard
@@ -2299,6 +2299,30 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     }
   }
 
+  private static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
+    // TODO: add smarter options that look at the current number of cores per
+    // node?
+    // for now we just go random (except when createNodeSet and createNodeSet.shuffle=false are passed in)
+
+    List<String> nodeList;
+
+    final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
+    final List<String> createNodeList = (createNodeSetStr == null)?null:StrUtils.splitSmart(createNodeSetStr, ",", true);
+
+    if (createNodeList != null) {
+      nodeList = new ArrayList<>(createNodeList);
+      nodeList.retainAll(liveNodes);
+      if (message.getBool(CREATE_NODE_SET_SHUFFLE, CREATE_NODE_SET_SHUFFLE_DEFAULT)) {
+        Collections.shuffle(nodeList, random);
+      }
+    } else {
+      nodeList = new ArrayList<>(liveNodes);
+      Collections.shuffle(nodeList, random);
+    }
+    
+    return nodeList;    
+  }
+  
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
     String collectionName = message.getStr("name");
     if (clusterState.hasCollection(collectionName)) {
@@ -2516,7 +2540,7 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
     if (node == null) {
-      node = getNodesForNewShard(clusterState, message, collection, coll.getSlices().size(), coll.getInt(ZkStateReader.MAX_SHARDS_PER_NODE, 1), coll.getInt(ZkStateReader.REPLICATION_FACTOR, 1), "add replica for "+collection, RANDOM).get(0).nodeName;
+      node = getNodesForNewShard(clusterState, collection, coll.getSlices().size(), coll.getInt(ZkStateReader.MAX_SHARDS_PER_NODE, 1), coll.getInt(ZkStateReader.REPLICATION_FACTOR, 1), null).get(0).nodeName;
       log.info("Node not provided, Identified {} for creating new replica", node);
     }
 
