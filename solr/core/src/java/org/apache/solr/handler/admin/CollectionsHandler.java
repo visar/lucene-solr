@@ -22,6 +22,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.ASYNC;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATESHARD;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET_SHUFFLE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REQUESTID;
@@ -474,7 +475,7 @@ public class CollectionsHandler extends RequestHandlerBase {
          COLL_CONF,
          NUM_SLICES,
          MAX_SHARDS_PER_NODE,
-         CREATE_NODE_SET,
+         CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE,
          SHARDS_PROP,
          ASYNC,
          AUTO_ADD_REPLICAS,

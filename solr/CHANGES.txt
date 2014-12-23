@@ -19,6 +19,9 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 ==================  4.10.3 ==================
 
+* SOLR-6729: createNodeSet.shuffle=(true|false) support for /admin/collections?action=CREATE.
+  (Christine Poerschke, Ramkumar Aiyengar via Mark Miller)
+  
 Bug Fixes
 ----------------------
 
