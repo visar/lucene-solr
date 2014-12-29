@@ -486,8 +486,8 @@ class BytesStore extends DataOutput implements Accountable {
   @Override
   public long ramBytesUsed() {
     long size = BASE_RAM_BYTES_USED;
-    for (byte[] block : blocks) {
-      size += RamUsageEstimator.sizeOf(block);
+    for (ByteBuffer block : blocks) {
+      size += (block.isDirect() ? 0 : block.capacity()); // TODO: Need to fix this to be always capacity(), currently RamUsageTester doesn't account for BytesBuffers.
     }
     return size;
   }
