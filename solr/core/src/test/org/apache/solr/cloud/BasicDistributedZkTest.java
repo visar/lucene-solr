@@ -331,6 +331,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     handle.put("explain", SKIPVAL);
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
+    handle.put("timing", SKIPVAL); // debug.timing values
     handle.put("track", SKIP);
     handle.put("distribTiming", SKIP);
     query(false, new Object[] {"q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true"});
