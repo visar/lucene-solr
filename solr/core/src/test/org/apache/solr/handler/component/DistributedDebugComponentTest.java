@@ -272,7 +272,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertInDebug(response, "QParser");
     assertInDebug(response, "explain");
     assertInDebug(response, "timing");
-    
+    assertInDebug(response, "distribTiming");
+
     query.set("debug", "true");
     query.remove("debugQuery");
     response = server.query(query);
@@ -285,7 +286,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertInDebug(response, "QParser");
     assertInDebug(response, "explain");
     assertInDebug(response, "timing");
-    
+    assertInDebug(response, "distribTiming");
+
     query.set("debug",  "track");
     response = server.query(query);
     assertFalse(response.getDebugMap().isEmpty());
@@ -297,7 +299,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertNotInDebug(response, "QParser");
     assertNotInDebug(response, "explain");
     assertNotInDebug(response, "timing");
-    
+    assertNotInDebug(response, "distribTiming");
+
     query.set("debug",  "query");
     response = server.query(query);
     assertFalse(response.getDebugMap().isEmpty());
@@ -309,7 +312,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertInDebug(response, "QParser");
     assertNotInDebug(response, "explain");
     assertNotInDebug(response, "timing");
-    
+    assertNotInDebug(response, "distribTiming");
+
     query.set("debug",  "results");
     response = server.query(query);
     assertFalse(response.getDebugMap().isEmpty());
@@ -321,7 +325,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertNotInDebug(response, "QParser");
     assertInDebug(response, "explain");
     assertNotInDebug(response, "timing");
-    
+    assertNotInDebug(response, "distribTiming");
+
     query.set("debug",  "timing");
     response = server.query(query);
     assertFalse(response.getDebugMap().isEmpty());
@@ -333,7 +338,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertNotInDebug(response, "QParser");
     assertNotInDebug(response, "explain");
     assertInDebug(response, "timing");
-    
+    assertInDebug(response, "distribTiming");
+
     query.set("debug",  "false");
     response = server.query(query);
     assertNull(response.getDebugMap());
@@ -356,8 +362,10 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     
     assertNotNull(distribResponse.getDebugMap().get("track"));
     assertNull(nonDistribResponse.getDebugMap().get("track"));
-    assertEquals(distribResponse.getDebugMap().size() - 1, nonDistribResponse.getDebugMap().size());
-    
+
+    // nonDistribResponse wouldn't have track and distribTiming
+    assertEquals(distribResponse.getDebugMap().size() - 2, nonDistribResponse.getDebugMap().size());
+
     assertSectionEquals(distribResponse, nonDistribResponse, "explain");
     assertSectionEquals(distribResponse, nonDistribResponse, "rawquerystring");
     assertSectionEquals(distribResponse, nonDistribResponse, "querystring");
