@@ -37,10 +37,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Test sync phase that occurs when Leader goes down and a new Leader is
@@ -58,28 +57,20 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-  
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    resetExceptionIgnores();
   }
   
   public AliasIntegrationTest() {
     super();
     sliceCount = 1;
-    shardCount = random().nextBoolean() ? 3 : 4;
+    fixShardCount(random().nextBoolean() ? 3 : 4);
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     
     handle.clear();
     handle.put("timestamp", SKIPVAL);

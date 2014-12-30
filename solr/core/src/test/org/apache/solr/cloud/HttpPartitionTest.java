@@ -38,6 +38,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,24 +74,13 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   public HttpPartitionTest() {
     super();
     sliceCount = 2;
-    shardCount = 3;
+    fixShardCount(3);
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-  
-  @Override
-  @After
-  public void tearDown() throws Exception {    
-    try {
-      super.tearDown();
-    } catch (Exception exc) {}
-    
-    resetExceptionIgnores();
   }
   
   /**
@@ -104,8 +94,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride);
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     waitForThingsToLevelOut(30000);
 
     testLeaderInitiatedRecoveryCRUD();

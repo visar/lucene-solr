@@ -17,32 +17,16 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.CompositeIdRouter;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.Test;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 
 public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
@@ -66,8 +50,6 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
   public ShardRoutingTest() {
     schemaString = "schema15.xml";      // we need a string id
     super.sliceCount = 4;
-    super.shardCount = 8;
-    super.fixShardCount = true;  // we only want to test with exactly 4 slices.
 
     // from negative to positive, the upper bits of the hash ranges should be
     // shard1: top bits:10  80000000:bfffffff
@@ -109,8 +91,9 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
      ***/
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 8)
+  public void test() throws Exception {
     boolean testFinished = false;
     try {
       handle.clear();
@@ -349,10 +332,4 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     req.setParams(params(reqParams));
     req.process(cloudClient);
   }
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
 }

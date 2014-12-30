@@ -54,11 +54,9 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     //useFactory(null);
   }
 
-
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     
     String zkDir = testDir.getAbsolutePath() + File.separator
     + "zookeeper/server1/data";
@@ -212,8 +210,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   }
   
   @Override
-  @After
-  public void tearDown() throws Exception {
+  public void distribTearDown() throws Exception {
     if (DEBUG) {
       printLayout();
     }
@@ -228,7 +225,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.clearProperty(MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);
     
     resetExceptionIgnores();
-    super.tearDown();
+    super.distribTearDown();
     zkServer.shutdown();
   }
   

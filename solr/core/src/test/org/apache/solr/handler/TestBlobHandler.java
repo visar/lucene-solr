@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.SimplePostTool;
+import org.junit.Test;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -58,7 +59,8 @@ import static org.apache.solr.core.ConfigOverlay.getObjectByPath;
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   static final Logger log =  LoggerFactory.getLogger(TestBlobHandler.class);
 
-  private void doBlobHandlerTest() throws Exception {
+  @Test
+  public void doBlobHandlerTest() throws Exception {
     SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)));
     try {
       CollectionAdminResponse response1;
@@ -116,8 +118,8 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     System.clearProperty("numShards");
     System.clearProperty("zkHost");
 
@@ -193,11 +195,5 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     } finally {
       httpPost.releaseConnection();
     }
-  }
-
-  @Override
-  public void doTest() throws Exception {
-    doBlobHandlerTest();
-
   }
 }

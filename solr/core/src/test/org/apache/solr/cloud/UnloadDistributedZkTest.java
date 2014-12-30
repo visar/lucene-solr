@@ -33,6 +33,7 @@ import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,17 +49,6 @@ import java.util.concurrent.TimeUnit;
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class UnloadDistributedZkTest extends BasicDistributedZkTest {
-  
-  @BeforeClass
-  public static void beforeThisClass3() throws Exception {
- 
-  }
-  
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
 
   protected String getSolrXml() {
     return "solr-no-core.xml";
@@ -68,9 +58,9 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     super();
     checkCreatedVsState = false;
   }
-  
-  @Override
-  public void doTest() throws Exception {
+
+  @Test
+  public void test() throws Exception {
     
     testCoreUnloadAndLeaders(); // long
     testUnloadLotsOfCores(); // long
@@ -428,14 +418,5 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     executor.shutdown();
     executor.awaitTermination(120, TimeUnit.SECONDS);
     adminClient.shutdown();
-  }
-
-
-
-
-  
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
   }
 }

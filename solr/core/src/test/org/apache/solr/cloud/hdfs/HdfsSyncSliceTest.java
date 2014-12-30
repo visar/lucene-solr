@@ -46,14 +46,7 @@ public class HdfsSyncSliceTest extends SyncSliceTest {
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
   }
-  
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
 
-  
   @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);

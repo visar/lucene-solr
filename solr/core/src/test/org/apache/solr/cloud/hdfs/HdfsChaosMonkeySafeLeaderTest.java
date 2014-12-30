@@ -47,10 +47,9 @@ public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
     dfsCluster = null;
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     
     // super class may hard code directory
     useFactory("org.apache.solr.core.HdfsDirectoryFactory");

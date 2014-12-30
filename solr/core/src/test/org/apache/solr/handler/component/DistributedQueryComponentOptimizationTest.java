@@ -25,6 +25,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -40,8 +41,6 @@ import java.util.Map;
 public class DistributedQueryComponentOptimizationTest extends BaseDistributedSearchTestCase {
 
   public DistributedQueryComponentOptimizationTest() {
-    fixShardCount = true;
-    shardCount = 3;
     stress = 0;
   }
 
@@ -50,8 +49,9 @@ public class DistributedQueryComponentOptimizationTest extends BaseDistributedSe
     initCore("solrconfig.xml", "schema-custom-field.xml");
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 3)
+  public void test() throws Exception {
     del("*:*");
 
     index(id, "1", "text", "a", "test_sS", "21", "payload", ByteBuffer.wrap(new byte[] { 0x12, 0x62, 0x15 }),                     //  2

@@ -50,6 +50,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,31 +98,23 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
     return SOLR_HOME;
   }
   
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     // we expect this time of exception as shards go up and down...
     //ignoreException(".*");
     
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    resetExceptionIgnores();
-  }
-  
   public CloudSolrClientTest() {
     super();
     sliceCount = 2;
-    shardCount = 3;
+    fixShardCount(3);
   }
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void test() throws Exception {
     allTests();
     stateVersionParamTest();
     customHttpClientTest();

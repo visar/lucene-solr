@@ -35,6 +35,7 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,18 +57,17 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
   }
 
-  @Before
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
     client = createCloudClient(null);
   }
 
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+  @Override
+  public void distribTearDown() throws Exception {
+    super.distribTearDown();
     client.shutdown();
   }
 
@@ -76,20 +76,13 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
   }
 
   public DeleteReplicaTest() {
-    fixShardCount = true;
-
     sliceCount = 2;
-    shardCount = 4;
-
     checkCreatedVsState = false;
   }
 
-  @Override
-  public void doTest() throws Exception {
-    deleteLiveReplicaTest();
-  }
-
-  private void deleteLiveReplicaTest() throws Exception {
+  @Test
+  @ShardsFixed(num = 4)
+  public void deleteLiveReplicaTest() throws Exception {
     String collectionName = "delLiveColl";
     CloudSolrClient client = createCloudClient(null);
     try {
