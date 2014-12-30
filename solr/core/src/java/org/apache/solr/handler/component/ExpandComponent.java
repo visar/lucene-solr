@@ -96,6 +96,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb.req.getParams().getBool(ExpandParams.EXPAND, false)) {
       rb.doExpand = true;
+      rb.setNeedQueryInGetFields(true);
     }
   }
 

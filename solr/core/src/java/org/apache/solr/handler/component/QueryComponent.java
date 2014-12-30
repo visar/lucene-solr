@@ -130,9 +130,10 @@ public class QueryComponent extends SearchComponent
       return;
     }
     
-    // Set field flags    
     ReturnFields returnFields = new SolrReturnFields( req );
     rsp.setReturnFields( returnFields );
+
+    // Set field flags
     int flags = 0;
     if (returnFields.wantsScore()) {
       flags |= SolrIndexSearcher.GET_SCORES;
@@ -142,6 +143,11 @@ public class QueryComponent extends SearchComponent
       flags |= SolrIndexSearcher.SEGMENT_TERMINATE_EARLY;
     }
     rb.setFieldFlags( flags );
+
+    // Transformers in general could require context, including the query
+    if (returnFields.getTransformer() != null) {
+      rb.setNeedQueryInGetFields(true);
+    }
 
     String defType = params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE);
 
@@ -1193,7 +1199,7 @@ public class QueryComponent extends SearchComponent
       // we already have the field sort values
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);
 
-      if (!rb.isNeedDocSet()) {
+      if (!rb.isNeedDocSet() && !rb.isNeedQueryInGetFields()) {
         sreq.params.remove(CommonParams.Q);        
         sreq.params.remove(CommonParams.FQ);        
       }

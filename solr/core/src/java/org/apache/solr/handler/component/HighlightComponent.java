@@ -82,6 +82,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
         }
       }
+      rb.setNeedQueryInGetFields(true);
     }
   }
 

@@ -386,6 +386,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return;
     }
 
+    rb.setNeedQueryInGetFields(true);
+
     boolean exclusive = params.getBool(QueryElevationParams.EXCLUSIVE, false);
     // A runtime parameter can alter the config value for forceElevation
     boolean force = params.getBool(QueryElevationParams.FORCE_ELEVATION, forceElevation);

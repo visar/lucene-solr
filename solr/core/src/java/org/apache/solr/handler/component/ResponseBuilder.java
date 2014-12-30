@@ -64,6 +64,7 @@ public class ResponseBuilder
 
   private boolean needDocList = false;
   private boolean needDocSet = false;
+  private boolean needQueryInGetFields = false;
   private int fieldFlags = 0;
   //private boolean debug = false;
   private boolean debugTimings, debugRawTimings, debugQuery, debugResults, debugTrack;
@@ -343,6 +344,14 @@ public class ResponseBuilder
 
   public boolean isNeedDocSet() {
     return needDocSet;
+  }
+
+  public void setNeedQueryInGetFields(boolean needQueryInGetFields) {
+    this.needQueryInGetFields = needQueryInGetFields;
+  }
+
+  public boolean isNeedQueryInGetFields() {
+    return needQueryInGetFields;
   }
 
   public void setNeedDocSet(boolean needDocSet) {

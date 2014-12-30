@@ -89,6 +89,9 @@ public class DebugComponent extends SearchComponent
     if(rb.isDebugTrack() && rb.isDistrib) {
       doDebugTrack(rb);
     }
+    if(rb.isDebug() && rb.isDistrib) {
+      rb.setNeedQueryInGetFields(true);
+    }
   }
 
   @SuppressWarnings("unchecked")
