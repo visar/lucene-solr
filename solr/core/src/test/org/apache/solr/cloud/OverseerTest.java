@@ -661,8 +661,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
       mockController.publishState(collection, "core1", "core_node1", null, 1);
       while (version == getClusterStateVersion(zkClient));
       Thread.sleep(500);
-      assertFalse("collection1 should be gone after publishing the null state",
-          reader.getClusterState().getCollections().contains(collection));
+//    TODO: Need to figure out how to modify this test now that Core delete doesn't cascade (SOLR-5209)
+//      assertFalse("collection1 should be gone after publishing the null state",
+//          reader.getClusterState().getCollections().contains(collection));
     } finally {
       close(mockController);
       close(overseerClient);

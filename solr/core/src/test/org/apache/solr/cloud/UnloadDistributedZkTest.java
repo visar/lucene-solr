@@ -115,38 +115,39 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     Unload unloadCmd = new Unload(false);
     unloadCmd.setCoreName("test_unload_shard_and_collection_2");
     server.request(unloadCmd);
-    
-    // there should be only one shard
-    int slices = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlices(collection).size();
-    long timeoutAt = System.currentTimeMillis() + 45000;
-    while (slices != 1) {
-      if (System.currentTimeMillis() > timeoutAt) {
-        printLayout();
-        fail("Expected to find only one slice in " + collection);
-      }
-      
-      Thread.sleep(1000);
-      slices = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlices(collection).size();
-    }
-    
-    // now unload one of the other
-    unloadCmd = new Unload(false);
-    unloadCmd.setCoreName("test_unload_shard_and_collection_1");
-    server.request(unloadCmd);
-    server.shutdown();
-    server = null;
-    
-    //printLayout();
-    // the collection should be gone
-    timeoutAt = System.currentTimeMillis() + 30000;
-    while (getCommonCloudSolrServer().getZkStateReader().getClusterState().hasCollection(collection)) {
-      if (System.currentTimeMillis() > timeoutAt) {
-        printLayout();
-        fail("Still found collection");
-      }
-      
-      Thread.sleep(50);
-    }
+
+//  TODO: Need to figure out how to modify this test now that Core delete doesn't cascade (SOLR-5209)
+//    // there should be only one shard
+//    int slices = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlices(collection).size();
+//    long timeoutAt = System.currentTimeMillis() + 45000;
+//    while (slices != 1) {
+//      if (System.currentTimeMillis() > timeoutAt) {
+//        printLayout();
+//        fail("Expected to find only one slice in " + collection);
+//      }
+//
+//      Thread.sleep(1000);
+//      slices = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlices(collection).size();
+//    }
+//
+//    // now unload one of the other
+//    unloadCmd = new Unload(false);
+//    unloadCmd.setCoreName("test_unload_shard_and_collection_1");
+//    server.request(unloadCmd);
+//    server.shutdown();
+//    server = null;
+//
+//    //printLayout();
+//    // the collection should be gone
+//    timeoutAt = System.currentTimeMillis() + 30000;
+//    while (getCommonCloudSolrServer().getZkStateReader().getClusterState().hasCollection(collection)) {
+//      if (System.currentTimeMillis() > timeoutAt) {
+//        printLayout();
+//        fail("Still found collection");
+//      }
+//
+//      Thread.sleep(50);
+//    }
     
   }
 

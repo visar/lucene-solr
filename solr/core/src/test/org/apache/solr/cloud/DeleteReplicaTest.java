@@ -122,7 +122,8 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
       removeAndWaitForReplicaGone(collectionName, client, replica1,
           shard1.getName());
-      assertFalse("dataDir for " + replica1.getName() + " should have been deleted by deleteReplica API", new File(dataDir).exists());
+//    TODO: Need to figure out how to modify this test now that Core delete doesn't cascade (SOLR-5209)
+//      assertFalse("dataDir for " + replica1.getName() + " should have been deleted by deleteReplica API", new File(dataDir).exists());
     } finally {
       client.shutdown();
     }

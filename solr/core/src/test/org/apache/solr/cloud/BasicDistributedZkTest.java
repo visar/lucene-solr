@@ -403,17 +403,18 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     } finally {
       server.shutdown();
     }
-    
-    long timeout = System.currentTimeMillis() + 15000;
-    while (cloudClient.getZkStateReader().getZkClient().exists("/collections/the_core_collection", true)) {
-      if (timeout <= System.currentTimeMillis()) {
-        fail(cloudClient.getZkStateReader().getZkClient().getChildren("/collections", null, true).toString() + " Collection zk node still exists");
-      }
-      Thread.sleep(100);
-    }
-    
-    
-    assertFalse("Collection zk node still exists", cloudClient.getZkStateReader().getZkClient().exists("/collections/the_core_collection", true));
+
+//  TODO: Need to figure out how to handle this now that Core create doesn't cascade (SOLR-5209)
+//    long timeout = System.currentTimeMillis() + 15000;
+//    while (cloudClient.getZkStateReader().getZkClient().exists("/collections/the_core_collection", true)) {
+//      if (timeout <= System.currentTimeMillis()) {
+//        fail(cloudClient.getZkStateReader().getZkClient().getChildren("/collections", null, true).toString() + " Collection zk node still exists");
+//      }
+//      Thread.sleep(100);
+//    }
+//
+//
+//    assertFalse("Collection zk node still exists", cloudClient.getZkStateReader().getZkClient().exists("/collections/the_core_collection", true));
   }
   
   private void testShardParamVariations() throws Exception {
