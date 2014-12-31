@@ -60,6 +60,7 @@ public class CoreContainer {
   protected static final Logger log = LoggerFactory.getLogger(CoreContainer.class);
 
   private final SolrCores solrCores = new SolrCores(this);
+  private Integer solrCoresShutdownTimeoutSeconds;
 
   public static class CoreLoadFailure {
 
@@ -213,6 +214,7 @@ public class CoreContainer {
     updateShardHandler = new UpdateShardHandler(cfg);
 
     solrCores.allocateLazyCores(cfg.getTransientCacheSize(), loader);
+    solrCoresShutdownTimeoutSeconds = cfg.getShutdownCoresCloseTimeoutSeconds();
 
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
@@ -344,7 +346,7 @@ public class CoreContainer {
         }
       }
       // Now clear all the cores that are being operated upon.
-      solrCores.close(cfg.getShutdownCoresCloseTimeoutSeconds());
+      solrCores.close(solrCoresShutdownTimeoutSeconds);
 
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it up if so.
       // Since all the pending operations queues have been drained, there should be nothing to do.

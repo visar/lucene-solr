@@ -58,9 +58,9 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     SolrCore core = cores.getCore("");
 
     assertEquals(COLLECTION1, cores.getDefaultCoreName());
-    
-    cores.unload("");
+
     core.close();
+    cores.unload("");
 
     CoreDescriptor cd = new CoreDescriptor(cores, COLLECTION1, "collection1",
                                             CoreDescriptor.CORE_DATADIR, createTempDir("dataDir2").getAbsolutePath());
