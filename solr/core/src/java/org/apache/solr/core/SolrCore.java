@@ -2029,7 +2029,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       (SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
     NamedList<Object> responseHeader = rsp.getResponseHeader();
-    final long qtime=(long)(req.getRequestTimer().getTime());
+    final int qtime=(int)(req.getRequestTimer().getTime());
     int status = 0;
     Exception exception = rsp.getException();
     if( exception != null ){
