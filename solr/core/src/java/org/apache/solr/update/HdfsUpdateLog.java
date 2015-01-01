@@ -66,9 +66,7 @@ public class HdfsUpdateLog extends UpdateLog {
     if (future != null) {
       try {
         future.get();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      } catch (ExecutionException e) {
+      } catch (InterruptedException | ExecutionException e) {
         throw new RuntimeException(e);
       }
     }
@@ -81,7 +79,12 @@ public class HdfsUpdateLog extends UpdateLog {
     
     defaultSyncLevel = SyncLevel.getSyncLevel((String) info.initArgs
         .get("syncLevel"));
-    
+
+    numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
+    maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
+
+    log.info("Initializing HdfsUpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={}",
+        dataDir, defaultSyncLevel, numRecordsToKeep, maxNumLogsToKeep);
   }
 
   private Configuration getConf() {
@@ -262,8 +265,6 @@ public class HdfsUpdateLog extends UpdateLog {
           return path.getName().startsWith(prefix);
         }
       });
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException(e);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
