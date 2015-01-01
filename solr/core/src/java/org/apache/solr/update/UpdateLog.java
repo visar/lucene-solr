@@ -140,8 +140,8 @@ public class UpdateLog implements PluginInfoInitialized {
 
   protected final int numDeletesToKeep = 1000;
   protected final int numDeletesByQueryToKeep = 100;
-  private int numRecordsToKeep;
-  private int maxNumLogsToKeep;
+  protected int numRecordsToKeep;
+  protected int maxNumLogsToKeep;
 
   // keep track of deletes only... this is not updated on an add
   protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
@@ -220,7 +220,7 @@ public class UpdateLog implements PluginInfoInitialized {
     return maxNumLogsToKeep;
   }
 
-  static private int objToInt(Object obj, int def) {
+  protected static int objToInt(Object obj, int def) {
     if (obj != null) {
       return Integer.parseInt(obj.toString());
     }
