@@ -367,13 +367,14 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertEquals(distribResponse.getDebugMap().size() - 2, nonDistribResponse.getDebugMap().size());
 
     assertSectionEquals(distribResponse, nonDistribResponse, "explain");
+
     assertSectionEquals(distribResponse, nonDistribResponse, "rawquerystring");
     assertSectionEquals(distribResponse, nonDistribResponse, "querystring");
     assertSectionEquals(distribResponse, nonDistribResponse, "parsedquery");
     assertSectionEquals(distribResponse, nonDistribResponse, "parsedquery_toString");
     assertSectionEquals(distribResponse, nonDistribResponse, "QParser");
-    assertSectionEquals(distribResponse, nonDistribResponse, "filter_qieries");
-    assertSectionEquals(distribResponse, nonDistribResponse, "parsed_filter_qieries");
+    assertSectionEquals(distribResponse, nonDistribResponse, "filter_queries");
+    assertSectionEquals(distribResponse, nonDistribResponse, "parsed_filter_queries");
     
     // timing should have the same sections:
     assertSameKeys((NamedList<?>)nonDistribResponse.getDebugMap().get("timing"), (NamedList<?>)distribResponse.getDebugMap().get("timing"));
