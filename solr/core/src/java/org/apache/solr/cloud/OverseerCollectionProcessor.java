@@ -925,7 +925,11 @@ public class OverseerCollectionProcessor implements Runnable, Closeable {
       shard = shardList.get(0);
       log.info("deleteReplica shard={} was determined from collection={} replica={} core={}", shard, collectionName, replicaName, coreName);
     }
-    
+    if (replicaName == null) {
+      replicaName = replicaList.get(0).getName();
+      log.info("deleteReplica replicaName={} was determined from collection={} replica={} core={}", replicaName, collectionName, replicaName, coreName);
+    }
+
     String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
     
