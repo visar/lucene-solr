@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
@@ -48,6 +47,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
   private static SolrServer collection1;
   private static SolrServer collection2;
+  private static String urlCollection1;
+  private static String urlCollection2;
   private static String shard1;
   private static String shard2;
   private static File solrHome;
@@ -68,8 +69,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     collection1 = new HttpSolrServer(url);
     collection2 = new HttpSolrServer(url + "/collection2");
     
-    String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
-    String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
+    urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
+    urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
     
@@ -101,7 +102,17 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     jetty=null;
     resetExceptionIgnores();
   }
-  
+
+  private NamedList<Object> getTrackShardResponse(NamedList<Object> track, String responseKey, String shardAddress) {
+    List<NamedList<Object>> response = (List<NamedList<Object>>) track.get(responseKey);
+    for (NamedList<Object> shardResponse : response) {
+      if (shardResponse.get("shardAddress").equals(shardAddress)) {
+        return shardResponse;
+      }
+    }
+    return null;
+  }
+
   @Test
   @SuppressWarnings("unchecked")
   public void testSimpleSearch() throws Exception {
@@ -116,38 +127,39 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertNotNull(track);
     assertNotNull(track.get("rid"));
     assertNotNull(track.get("EXECUTE_QUERY"));
-    assertNotNull(((NamedList<Object>)track.get("EXECUTE_QUERY")).get(shard1));
-    assertNotNull(((NamedList<Object>)track.get("EXECUTE_QUERY")).get(shard2));
+    assertNotNull(getTrackShardResponse(track, "EXECUTE_QUERY", urlCollection1));
+    assertNotNull(getTrackShardResponse(track, "EXECUTE_QUERY", urlCollection2));
+
+    assertNotNull(getTrackShardResponse(track, "GET_FIELDS", urlCollection1));
+    assertNotNull(getTrackShardResponse(track, "GET_FIELDS", urlCollection2));
     
-    assertNotNull(((NamedList<Object>)track.get("GET_FIELDS")).get(shard1));
-    assertNotNull(((NamedList<Object>)track.get("GET_FIELDS")).get(shard2));
+    assertElementsPresent(getTrackShardResponse(track, "EXECUTE_QUERY", urlCollection1),
+        "QTime", "elapsed", "takeWaiting", "submitWaiting", "RequestPurpose", "NumFound", "Response");
+    assertElementsPresent(getTrackShardResponse(track, "EXECUTE_QUERY", urlCollection2),
+        "QTime", "elapsed", "takeWaiting", "submitWaiting", "RequestPurpose", "NumFound", "Response");
     
-    assertElementsPresent((NamedList<String>)((NamedList<Object>)track.get("EXECUTE_QUERY")).get(shard1), 
-        "QTime", "ElapsedTime", "RequestPurpose", "NumFound", "Response");
-    assertElementsPresent((NamedList<String>)((NamedList<Object>)track.get("EXECUTE_QUERY")).get(shard2), 
-        "QTime", "ElapsedTime", "RequestPurpose", "NumFound", "Response");
-    
-    assertElementsPresent((NamedList<String>)((NamedList<Object>)track.get("GET_FIELDS")).get(shard1), 
-        "QTime", "ElapsedTime", "RequestPurpose", "NumFound", "Response");
-    assertElementsPresent((NamedList<String>)((NamedList<Object>)track.get("GET_FIELDS")).get(shard2), 
-        "QTime", "ElapsedTime", "RequestPurpose", "NumFound", "Response");
+    assertElementsPresent(getTrackShardResponse(track, "GET_FIELDS", urlCollection1),
+        "QTime", "elapsed", "takeWaiting", "submitWaiting", "RequestPurpose", "NumFound", "Response");
+    assertElementsPresent(getTrackShardResponse(track, "GET_FIELDS", urlCollection2),
+        "QTime", "elapsed", "takeWaiting", "submitWaiting", "RequestPurpose", "NumFound", "Response");
     
     query.add("omitHeader", "true");
     response = collection1.query(query);
-    assertNull("QTime is not included in the response when omitHeader is set to true", 
-        ((NamedList<Object>)response.getDebugMap().get("track")).findRecursive("EXECUTE_QUERY", shard1, "QTime"));
-    assertNull("QTime is not included in the response when omitHeader is set to true", 
-        ((NamedList<Object>)response.getDebugMap().get("track")).findRecursive("GET_FIELDS", shard2, "QTime"));
+    track = (NamedList<Object>) response.getDebugMap().get("track");
+    assertNull("QTime is not included in the response when omitHeader is set to true",
+        (getTrackShardResponse(track, "EXECUTE_QUERY", urlCollection1).get("QTime")));
+    assertNull("QTime is not included in the response when omitHeader is set to true",
+        (getTrackShardResponse(track, "EXECUTE_QUERY", urlCollection2).get("QTime")));
     
     query.setQuery("id:1");
     response = collection1.query(query);
     track = (NamedList<Object>) response.getDebugMap().get("track");
-    assertNotNull(((NamedList<Object>)track.get("EXECUTE_QUERY")).get(shard1));
-    assertNotNull(((NamedList<Object>)track.get("EXECUTE_QUERY")).get(shard2));
+    assertNotNull(getTrackShardResponse(track, "EXECUTE_QUERY", urlCollection1));
+    assertNotNull(getTrackShardResponse(track, "EXECUTE_QUERY", urlCollection2));
     
-    assertNotNull(((NamedList<Object>)track.get("GET_FIELDS")).get(shard1));
+    assertNotNull(getTrackShardResponse(track, "GET_FIELDS", urlCollection1));
     // This test is invalid, as GET_FIELDS should not be executed in shard 2
-    assertNull(((NamedList<Object>)track.get("GET_FIELDS")).get(shard2));
+    assertNull(getTrackShardResponse(track, "GET_FIELDS", urlCollection2));
   }
   
   @Test
@@ -399,13 +411,10 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);
     assertTrue((Boolean)response.getResponseHeader().get("partialResults"));
-    @SuppressWarnings("unchecked")
-    NamedList<String> badShardTrack = (NamedList<String>) ((NamedList<NamedList<String>>)
-        ((NamedList<NamedList<NamedList<String>>>)response.getDebugMap().get("track")).get("EXECUTE_QUERY")).get(badShard);
-    assertEquals("Unexpected response size for shard", 1, badShardTrack.size());
-    Entry<String, String> exception = badShardTrack.iterator().next();
-    assertEquals("Expected key 'Exception' not found", "Exception", exception.getKey());
-    assertNotNull("Exception message should not be null", exception.getValue());
+    NamedList<Object> track = (NamedList<Object>) response.getDebugMap().get("track");
+    NamedList<Object> badShardTrack = getTrackShardResponse(track, "EXECUTE_QUERY", "http" + (isSSLMode() ? "s://" : "://") + badShard);
+    assertNotNull(badShardTrack);
+    assertNotNull("Exception message should not be null", badShardTrack.get("Exception"));
     unIgnoreException("Server refused connection");
   }
   
@@ -431,11 +440,13 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertFalse(iteratorObj2.hasNext());
   }
 
-  private void assertElementsPresent(NamedList<String> namedList, String...elements) {
+  private void assertElementsPresent(NamedList<Object> namedList, String... elements) {
     for(String element:elements) {
-      String value = namedList.get(element);
+      Object value = namedList.get(element);
       assertNotNull("Expected element '" + element + "' but was not found", value);
-      assertTrue("Expected element '" + element + "' but was empty", !value.isEmpty());
+      if (value instanceof String) {
+        assertTrue("Expected element '" + element + "' but was empty", !((String)value).isEmpty());
+      }
     }
   }
   

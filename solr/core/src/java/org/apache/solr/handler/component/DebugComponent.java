@@ -403,6 +403,7 @@ public class DebugComponent extends SearchComponent
   private NamedList<Object> getTrackResponse(ShardResponse shardResponse) {
     NamedList<Object> namedList = new SimpleOrderedMap<>();
     if (shardResponse.getException() != null) {
+      namedList.add("shardAddress", shardResponse.getShardAddress());
       namedList.add("Exception", shardResponse.getException().getMessage());
       return namedList;
     }
