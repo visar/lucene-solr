@@ -30,7 +30,9 @@ import org.apache.solr.core.SolrCore;
  */
 public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
 
-  @Override public void setUp() throws Exception 
+  protected CoreContainer cores;
+
+  @Override public void setUp() throws Exception
   {
     // TODO: fix this test to use MockDirectoryFactory
     System.clearProperty("solr.directoryFactory");

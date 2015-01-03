@@ -637,10 +637,10 @@ public class CoreContainer {
    */
   public void unload(String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
 
-    name = checkDefault(name);
+    final String coreName = checkDefault(name);
 
     // check for core-init errors first
-    CoreLoadFailure loadFailure = coreInitFailures.remove(name);
+    CoreLoadFailure loadFailure = coreInitFailures.remove(coreName);
     if (loadFailure != null) {
       // getting the index directory requires opening a DirectoryFactory with a SolrConfig, etc,
       // which we may not be able to do because of the init error.  So we just go with what we
@@ -649,12 +649,12 @@ public class CoreContainer {
       return;
     }
 
-    CoreDescriptor cd = solrCores.getCoreDescriptor(name);
+    final CoreDescriptor cd = solrCores.getCoreDescriptor(coreName);
     if (cd == null)
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + coreName + "]");
 
-    boolean close = solrCores.isLoadedNotPendingClose(name);
-    SolrCore core = solrCores.remove(name);
+    boolean close = solrCores.isLoadedNotPendingClose(coreName);
+    SolrCore core = solrCores.remove(coreName);
     coresLocator.delete(this, cd);
 
     if (core == null) {
@@ -666,23 +666,30 @@ public class CoreContainer {
     if (zkSys.getZkController() != null) {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
+
+      // arrange to be unregistered from Zk when we really are closed
+      core.addCloseHook(new CloseHook() {
+        @Override
+        public void preClose(SolrCore core) {}
+
+        @Override
+        public void postClose(SolrCore core) {
+          try {
+            zkSys.getZkController().unregister(coreName, cd);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + coreName + "] from cloud state");
+          } catch (KeeperException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + coreName + "] from cloud state", e);
+          }
+        }
+      });
     }
 
     core.unloadOnClose(deleteIndexDir, deleteDataDir, deleteInstanceDir);
-    if (close)
-      core.closeAndWait();
-
-    if (zkSys.getZkController() != null) {
-      try {
-        zkSys.getZkController().unregister(name, cd);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");
-      } catch (KeeperException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
-      }
+    if (close) {
+      core.close();
     }
-
   }
 
   public void rename(String name, String toName) {

@@ -42,8 +42,6 @@ import org.junit.Test;
  */
 public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase 
 {
-  protected CoreContainer cores;
-
   private File dataDir2;
   private File dataDir1;
   

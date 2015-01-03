@@ -17,11 +17,23 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.commons.lang.StringUtils;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -35,17 +47,6 @@ import org.apache.solr.util.TestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.Thread;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
@@ -765,6 +766,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       "</cores> " +
       "</solr>";
 
+  // This is useless now because these cores are not cloud aware
   @Test
   public void testMidUseUnload() throws Exception {
     final int maximumSleepMillis = random().nextInt(10000); // sleep for up to 10 s
@@ -794,10 +796,21 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           }
         }
 
+        // Verify if we are still in ZK
+        CoreDescriptor cd = core_to_use.getCoreDescriptor();
+        CoreContainer cc = cd.getCoreContainer();
+        if (cc != null && cc.isZooKeeperAware()) {
+          ClusterState clusterState = cc.getZkController().getClusterState();
+          CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
+          assertEquals(cloudDescriptor.getShardId(),
+              clusterState.getShardIdByCoreNodeName(cloudDescriptor.getCollectionName(),
+                  cloudDescriptor.getCoreNodeName()));
+        }
+
         assertFalse(core_to_use.isClosed()); // not closed since we are still using it and hold a reference
         core_to_use.close(); // now give up our reference to the core
       }
-    };
+    }
 
     CoreContainer cc = init();
 
@@ -810,7 +823,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       thread.start();
 
       unloadViaAdmin(cc, "collection1");
-      assertTrue(thread.core_to_use.isClosed()); // after unload-ing the core is closed
 
       thread.join();
     } finally {
