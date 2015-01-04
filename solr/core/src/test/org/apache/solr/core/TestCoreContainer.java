@@ -102,13 +102,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void testMidUsePatientShutdown() throws Exception {
     final String prop_key = "shutdownCoresCloseTimeoutSeconds";
-    final Integer prop_val = new Integer(random().nextInt(60)); // anything up to 1 minute
+    final Integer prop_val = (1 + random().nextInt(9)); // anything from 1-10s
 
     System.setProperty(prop_key, prop_val.toString());
     try {
-      final int maximumSleepMillis = prop_val.intValue()*1000 * random().nextInt(50)/100; // up to half the shutdown time
-      final Integer shutdownCoresCloseTimeoutSeconds = prop_val;
-      testMidUseShutdown_impl("_midUsePatientShutdown", maximumSleepMillis, shutdownCoresCloseTimeoutSeconds);
+      final int sleepMillis = prop_val * 1000 * (10 + random().nextInt(40))/100; // up to half the shutdown time
+      testMidUseShutdown_impl("_midUsePatientShutdown", sleepMillis, prop_val);
     } finally {
       System.clearProperty(prop_key);
     }
@@ -116,72 +115,69 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   @Test
   public void testMidUseShutdown() throws Exception {
-    final int maximumSleepMillis = random().nextInt(10);
+    final int sleepMillis = (1 + random().nextInt(99));
     final Integer shutdownCoresCloseTimeoutSeconds = null;
-    testMidUseShutdown_impl("_midUseShutdown", maximumSleepMillis, shutdownCoresCloseTimeoutSeconds);
+    testMidUseShutdown_impl("_midUseShutdown", sleepMillis, shutdownCoresCloseTimeoutSeconds);
   }
 
-  private void testMidUseShutdown_impl(final String testCaseName, final int maximumSleepMillis, final Integer shutdownCoresCloseTimeoutSeconds) throws Exception {
+  private void testMidUseShutdown_impl(final String testCaseName, final int sleepMillis, final Integer shutdownCoresCloseTimeoutSeconds) throws Exception {
     if (VERBOSE) {
-      System.out.println("TestCoreContainer.testMidUseShutdown_impl testCaseName="+testCaseName+" maximumSleepMillis="+maximumSleepMillis+" shutdownCoresCloseTimeoutSeconds="+shutdownCoresCloseTimeoutSeconds);
+      System.out.println("TestCoreContainer.testMidUseShutdown_impl testCaseName="+testCaseName+" sleepMillis="+sleepMillis+" shutdownCoresCloseTimeoutSeconds="+shutdownCoresCloseTimeoutSeconds);
     }
     final CoreContainer cores = init(testCaseName);
 
     class TestThread extends Thread {
-
-      SolrCore core_to_use = null;
+      SolrCore coreToUse = null;
 
       @Override
       public void run() {
-
-        final int sleep_millis = random().nextInt(maximumSleepMillis);
         try {
-          if (sleep_millis > 0) {
+          if (sleepMillis > 0) {
             if (VERBOSE) {
-              System.out.println("TestCoreContainer.testMidUseShutdown_impl Thread.run sleeping for "+sleep_millis+" ms");
+              System.out.println("TestCoreContainer.testMidUseShutdown_impl Thread.run sleeping for "+ sleepMillis +" ms");
             }
-            Thread.sleep(sleep_millis);
+            Thread.sleep(sleepMillis);
           }
         }
         catch (InterruptedException ie) {
           if (VERBOSE) {
-            System.out.println("TestCoreContainer.testMidUseShutdown_impl Thread.run caught "+ie+" whilst sleeping for "+sleep_millis+" ms");
+            System.out.println("TestCoreContainer.testMidUseShutdown_impl Thread.run caught "+ie+" whilst sleeping for "+ sleepMillis +" ms");
           }
         }
 
-        assertFalse(core_to_use.isClosed()); // not closed since we are still using it and hold a reference
-        core_to_use.close(); // now give up our reference to the core
+        assertFalse(coreToUse.isClosed()); // not closed since we are still using it and hold a reference
+        coreToUse.close(); // now give up our reference to the core
       }
-    };
+    }
 
     TestThread thread = new TestThread();
 
     try {
-      thread.core_to_use = cores.getCore("collection1");
-      assertNotNull(thread.core_to_use);
-      assertFalse(thread.core_to_use.isClosed()); // freshly-in-use core is not closed
+      thread.coreToUse = cores.getCore("collection1");
+      assertNotNull(thread.coreToUse);
+      assertFalse(thread.coreToUse.isClosed()); // freshly-in-use core is not closed
       thread.start();
     } finally {
       if (VERBOSE) {
-        System.out.println("TestCoreContainer.testMidUseShutdown_impl before cores.shutdown thread.core_to_use.isClosed()="+thread.core_to_use.isClosed());
+        System.out.println("TestCoreContainer.testMidUseShutdown_impl before cores.shutdown thread.coreToUse.isClosed()=" + thread.coreToUse.isClosed());
       }
       cores.shutdown();
       if (VERBOSE) {
-        System.out.println("TestCoreContainer.testMidUseShutdown_impl  after cores.shutdown thread.core_to_use.isClosed()="+thread.core_to_use.isClosed());
+        System.out.println("TestCoreContainer.testMidUseShutdown_impl  after cores.shutdown thread.coreToUse.isClosed()=" + thread.coreToUse.isClosed());
       }
       if (shutdownCoresCloseTimeoutSeconds != null) {
-        assertTrue(thread.core_to_use.isClosed());
+        assertTrue(thread.coreToUse.isClosed());
       }
     }
 
     if (VERBOSE) {
-      System.out.println("TestCoreContainer.testMidUseShutdown_impl before thread.join thread.core_to_use.isClosed()="+thread.core_to_use.isClosed());
+      System.out.println("TestCoreContainer.testMidUseShutdown_impl before thread.join thread.coreToUse.isClosed()=" + thread.coreToUse.isClosed());
     }
     thread.join();
     if (VERBOSE) {
-      System.out.println("TestCoreContainer.testMidUseShutdown_impl  after thread.join thread.core_to_use.isClosed()="+thread.core_to_use.isClosed());
+      System.out.println("TestCoreContainer.testMidUseShutdown_impl  after thread.join thread.coreToUse.isClosed()=" + thread.coreToUse.isClosed());
     }
-    assertTrue(thread.core_to_use.isClosed());
+    assertTrue(thread.coreToUse.isClosed());
   }
 
   @Test

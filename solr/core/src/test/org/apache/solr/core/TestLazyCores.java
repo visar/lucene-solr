@@ -769,35 +769,32 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // This is useless now because these cores are not cloud aware
   @Test
   public void testMidUseUnload() throws Exception {
-    final int maximumSleepMillis = random().nextInt(10000); // sleep for up to 10 s
+    final int sleepMillis = (1 + random().nextInt(9)) * 1000; // sleep for 1-10s
     if (VERBOSE) {
-      System.out.println("TestLazyCores.testMidUseUnload maximumSleepMillis="+maximumSleepMillis);
+      System.out.println("TestLazyCores.testMidUseUnload sleepMillis="+sleepMillis);
     }
 
     class TestThread extends Thread {
-
-      SolrCore core_to_use = null;
+      SolrCore coreToUse = null;
 
       @Override
       public void run() {
-
-        final int sleep_millis = random().nextInt(maximumSleepMillis);
         try {
-          if (sleep_millis > 0) {
+          if (sleepMillis > 0) {
             if (VERBOSE) {
-              System.out.println("TestLazyCores.testMidUseUnload Thread.run sleeping for "+sleep_millis+" ms");
+              System.out.println("TestLazyCores.testMidUseUnload Thread.run sleeping for "+ sleepMillis +" ms");
             }
-            Thread.sleep(sleep_millis);
+            Thread.sleep(sleepMillis);
           }
         }
         catch (InterruptedException ie) {
           if (VERBOSE) {
-            System.out.println("TestLazyCores.testMidUseUnload Thread.run caught "+ie+" whilst sleeping for "+sleep_millis+" ms");
+            System.out.println("TestLazyCores.testMidUseUnload Thread.run caught "+ie+" whilst sleeping for "+ sleepMillis +" ms");
           }
         }
 
         // Verify if we are still in ZK
-        CoreDescriptor cd = core_to_use.getCoreDescriptor();
+        CoreDescriptor cd = coreToUse.getCoreDescriptor();
         CoreContainer cc = cd.getCoreContainer();
         if (cc != null && cc.isZooKeeperAware()) {
           ClusterState clusterState = cc.getZkController().getClusterState();
@@ -807,8 +804,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
                   cloudDescriptor.getCoreNodeName()));
         }
 
-        assertFalse(core_to_use.isClosed()); // not closed since we are still using it and hold a reference
-        core_to_use.close(); // now give up our reference to the core
+        assertFalse(coreToUse.isClosed()); // not closed since we are still using it and hold a reference
+        coreToUse.close(); // now give up our reference to the core
       }
     }
 
@@ -817,9 +814,9 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     try {
       TestThread thread = new TestThread();
 
-      thread.core_to_use = cc.getCore("collection1");
-      assertNotNull(thread.core_to_use);
-      assertFalse(thread.core_to_use.isClosed()); // freshly-in-use core is not closed
+      thread.coreToUse = cc.getCore("collection1");
+      assertNotNull(thread.coreToUse);
+      assertFalse(thread.coreToUse.isClosed()); // freshly-in-use core is not closed
       thread.start();
 
       unloadViaAdmin(cc, "collection1");
