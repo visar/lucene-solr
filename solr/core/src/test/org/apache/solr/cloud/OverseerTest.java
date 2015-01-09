@@ -630,6 +630,12 @@ public class OverseerTest extends SolrTestCaseJ4 {
     
     SolrZkClient zkClient = null;
     try {
+
+      final String core = "core1";
+      final String core_node = "core_node1";
+      final String shard = "shard1";
+      final int numShards = 1;
+
       server.run();
 
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
@@ -647,44 +653,46 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerClient = electNewOverseer(server.getZkAddress());
       
       Thread.sleep(1000);
-      mockController.publishState(collection, "core1", "core_node1",
-          ZkStateReader.RECOVERING, 1);
+      mockController.publishState(collection, core, core_node,
+          ZkStateReader.RECOVERING, numShards);
       
       waitForCollections(reader, collection);
-      verifyStatus(reader, "shard1", "core_node1", ZkStateReader.RECOVERING);
+      verifyStatus(reader, shard, core_node, ZkStateReader.RECOVERING);
       
       int version = getClusterStateVersion(zkClient);
       
-      mockController.publishState(collection, "core1", "core_node1", ZkStateReader.ACTIVE,
-          1);
+      mockController.publishState(collection, core, core_node, ZkStateReader.ACTIVE,
+          numShards);
       
       while (version == getClusterStateVersion(zkClient));
       
-      verifyStatus(reader, "shard1", "core_node1", ZkStateReader.ACTIVE);
+      verifyStatus(reader, shard, core_node, ZkStateReader.ACTIVE);
       version = getClusterStateVersion(zkClient);
       overseerClient.close();
       Thread.sleep(1000); // wait for overseer to get killed
       
-      mockController.publishState(collection, "core1", "core_node1",
-          ZkStateReader.RECOVERING, 1);
+      mockController.publishState(collection, core, core_node,
+          ZkStateReader.RECOVERING, numShards);
       version = getClusterStateVersion(zkClient);
       
       overseerClient = electNewOverseer(server.getZkAddress());
       
       while (version == getClusterStateVersion(zkClient));
       
-      verifyStatus(reader, "shard1", "core_node1", ZkStateReader.RECOVERING);
+      verifyStatus(reader, shard, core_node, ZkStateReader.RECOVERING);
       
       assertEquals("Live nodes count does not match", 1, reader
           .getClusterState().getLiveNodes().size());
-      assertEquals("Shard count does not match", 1, reader.getClusterState()
-          .getSlice(collection, "shard1").getReplicasMap().size());
+      assertEquals(shard+" replica count does not match", 1, reader.getClusterState()
+          .getSlice(collection, shard).getReplicasMap().size());
       version = getClusterStateVersion(zkClient);
-      mockController.publishState(collection, "core1", "core_node1", null, 1);
+      mockController.publishState(collection, core, core_node, null, numShards);
       while (version == getClusterStateVersion(zkClient));
       Thread.sleep(500);
-      assertFalse(collection+" should be gone after publishing the null state",
+      assertTrue(collection+" should remain after removal of the last core", // as of SOLR-5209 core removal does not cascade to remove the slice and collection
           reader.getClusterState().getCollections().contains(collection));
+      assertTrue(core_node+" should be gone after publishing the null state",
+          null == reader.getClusterState().getCollection(collection).getReplica(core_node));
     } finally {
       close(mockController);
       close(overseerClient);
