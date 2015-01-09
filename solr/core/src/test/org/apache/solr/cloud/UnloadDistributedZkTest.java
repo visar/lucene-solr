@@ -26,6 +26,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -36,6 +38,7 @@ import org.junit.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -82,15 +85,47 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     }
   }
 
+  private void checkCoreNamePresenceAndSliceCount(String CollectionName, String CoreName, boolean shouldBePresent, int expectedSliceCount) throws Exception {
+    long timeoutAt = System.currentTimeMillis() + 45000;
+    Boolean isPresent = null; // null meaning "don't know"    
+    while (null == isPresent || shouldBePresent != isPresent.booleanValue()) {
+      Collection<Slice> slices = getCommonCloudSolrClient().getZkStateReader().getClusterState().getSlices(CollectionName);
+      if (System.currentTimeMillis() > timeoutAt) {
+        printLayout();
+        fail("checkCoreNamePresenceAndSliceCount failed:"
+            +" collection="+CollectionName+" CoreName="+CoreName
+            +" shouldBePresent="+shouldBePresent+" isPresent="+isPresent
+            +" expectedSliceCount="+expectedSliceCount+" actualSliceCount="+slices.size());
+      }
+      if (expectedSliceCount == slices.size()) {
+        isPresent = false;
+        for (Slice slice : slices) {
+          for (Replica replica : slice.getReplicas()) {
+            if (CoreName.equals(replica.get("core"))) {
+              isPresent = true;
+            }
+          }
+        }
+      }
+    }
+  }
+  
   private void testUnloadShardAndCollection() throws Exception{
+    
+    final int numShards = 2;
+    
+    final String collection = "test_unload_shard_and_collection";
+    
+    final String coreName1 = collection+"_1";
+    final String coreName2 = collection+"_2";
+    
     // create one leader and one replica
     Create createCmd = new Create();
-    createCmd.setCoreName("test_unload_shard_and_collection_1");
-    String collection = "test_unload_shard_and_collection";
+    createCmd.setCoreName(coreName1);
     createCmd.setCollection(collection);
     String coreDataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(getDataDir(coreDataDir));
-    createCmd.setNumShards(2);
+    createCmd.setNumShards(numShards);
     
     SolrClient client = clients.get(0);
     String url1 = getBaseUrl(client);
@@ -100,8 +135,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     adminClient.request(createCmd);
     
     createCmd = new Create();
-    createCmd.setCoreName("test_unload_shard_and_collection_2");
-    collection = "test_unload_shard_and_collection";
+    createCmd.setCoreName(coreName2);
     createCmd.setCollection(collection);
     coreDataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(getDataDir(coreDataDir));
@@ -111,43 +145,36 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     // does not mean they are active and up yet :*
     waitForRecoveriesToFinish(collection, false);
 
+    final boolean unloadInOrder = random().nextBoolean();
+    final String unloadCmdCoreName1 = (unloadInOrder ? coreName1 : coreName2);
+    final String unloadCmdCoreName2 = (unloadInOrder ? coreName2 : coreName1);
+    
+    checkCoreNamePresenceAndSliceCount(collection, unloadCmdCoreName1, true /* shouldBePresent */, numShards /* expectedSliceCount */);
+    checkCoreNamePresenceAndSliceCount(collection, unloadCmdCoreName2, true /* shouldBePresent */, numShards /* expectedSliceCount */);
+        
     // now unload one of the two
     Unload unloadCmd = new Unload(false);
-    unloadCmd.setCoreName("test_unload_shard_and_collection_2");
+    unloadCmd.setCoreName(unloadCmdCoreName1);
     adminClient.request(unloadCmd);
-    
-    // there should be only one shard
-    int slices = getCommonCloudSolrClient().getZkStateReader().getClusterState().getSlices(collection).size();
-    long timeoutAt = System.currentTimeMillis() + 45000;
-    while (slices != 1) {
-      if (System.currentTimeMillis() > timeoutAt) {
-        printLayout();
-        fail("Expected to find only one slice in " + collection);
-      }
-      
-      Thread.sleep(1000);
-      slices = getCommonCloudSolrClient().getZkStateReader().getClusterState().getSlices(collection).size();
-    }
+    // and check that it's gone and slice count remains unchanged (as of SOLR-5209 replica removal does not cascade to remove the slice and collection)
+    checkCoreNamePresenceAndSliceCount(collection, unloadCmdCoreName1, false /* shouldBePresent */, numShards /* expectedSliceCount */);
     
     // now unload one of the other
     unloadCmd = new Unload(false);
-    unloadCmd.setCoreName("test_unload_shard_and_collection_1");
+    unloadCmd.setCoreName(unloadCmdCoreName2);
     adminClient.request(unloadCmd);
+    // and check that it's gone and slice count remains unchanged (as of SOLR-5209 replica removal does not cascade to remove the slice and collection)
+    checkCoreNamePresenceAndSliceCount(collection, unloadCmdCoreName2, false /* shouldBePresent */, numShards /* expectedSliceCount */);
+    
     adminClient.shutdown();
     adminClient = null;
     
     //printLayout();
-    // the collection should be gone
-    timeoutAt = System.currentTimeMillis() + 30000;
-    while (getCommonCloudSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
-      if (System.currentTimeMillis() > timeoutAt) {
+    // the collection should still be present (as of SOLR-5209 replica removal does not cascade to remove the slice and collection)
+    if (!getCommonCloudSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
         printLayout();
-        fail("Still found collection");
-      }
-      
-      Thread.sleep(50);
+        fail("No longer found collection "+collection);
     }
-    
   }
 
   /**
