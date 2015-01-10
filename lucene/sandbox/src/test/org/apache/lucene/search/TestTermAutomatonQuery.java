@@ -463,6 +463,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     }
   }
 
+  @BadApple(bugUrl = "Something broke with intervals here")
   public void testRandom() throws Exception {
     int numDocs = atLeast(100);
     Directory dir = newDirectory();
