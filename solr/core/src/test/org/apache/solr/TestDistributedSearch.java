@@ -353,6 +353,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
     handle.put("track", SKIP); //track is not included in single node search
+    handle.put("timing", SKIPVAL); // debug.timing values
     handle.put("distribTiming", SKIP); // distribTiming is not included in single node search
     query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");
     query("q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
