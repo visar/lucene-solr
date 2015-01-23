@@ -39,7 +39,8 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
   private final IntervalIterator[] iterators;
   private int rightExtremeBegin;
   private final boolean collectLeaves;
-
+  private static boolean doUnnestQueue = Boolean.valueOf(System.getProperty("intervals.unnestqueue")).booleanValue();
+ 
   /**
    * Create a new ConjunctionIntervalIterator over a set of subiterators
    * @param scorer the parent scorer
@@ -87,6 +88,7 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
     } else {
       queue.pop();
     }
+    unnestQueue();
   }
 
   @Override
@@ -136,6 +138,8 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
         queue.add(intervalRef);
       }
     }
+    
+    unnestQueue();
     return docId;
   }
 
@@ -178,4 +182,60 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
   public int matchDistance() {
     return (rightExtremeBegin) - (queue.currentTopEnd) -1; // align the match if pos are adjacent
   }
+  
+  private void unnestQueue() throws IOException {
+    
+    if (!doUnnestQueue)
+      return;
+    
+    IntervalRef refs[] = new IntervalRef[queue.size()];
+   
+    boolean maybeNested = false;
+    for (int i = 0; i < refs.length; ++i)
+    {
+      refs[i] = queue.top();
+      queue.pop();
+      if (refs[i].interval.end > refs[i].interval.begin) {
+        maybeNested = true;
+      }
+    }
+    
+    queue.reset();
+    
+    while (maybeNested) {
+      maybeNested = false;
+      for (int i = 0; i < refs.length; ++i) {
+        if (refs[i] == null)
+          continue;
+        Interval interval = refs[i].interval;
+        if (interval.end > interval.begin) {
+          for (int j = 0; j < refs.length; ++j) {
+            if (i == j || refs[j] == null)
+              continue;
+            Interval other = refs[j].interval;
+            int index = refs[j].index;
+            if (interval.contains(other)) {
+              other = iterators[index].next();
+              if (other != null) {
+                refs[j] = new IntervalRef(other, index);
+                maybeNested = true;
+              }
+              else {
+                refs[j] = null;
+              }
+            }            
+          }
+        }
+      }      
+    }
+    
+    for (int i = 0; i < refs.length; ++i) {
+      if (refs[i] != null) {
+        queue.updateRightExtreme(refs[i]);
+        queue.add(refs[i]);
+      }      
+    }
+    
+  }
+   
 }
